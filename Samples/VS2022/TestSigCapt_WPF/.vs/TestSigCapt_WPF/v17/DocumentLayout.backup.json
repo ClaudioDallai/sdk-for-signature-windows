@@ -1,0 +1,68 @@
+{
+  "Version": 1,
+  "WorkspaceRootPath": "C:\\Users\\visio\\Documents\\Versioning\\sdk-for-signature-windows\\Samples\\VS2022\\TestSigCapt_WPF\\",
+  "Documents": [
+    {
+      "AbsoluteMoniker": "D:0:0:{34C6B3F6-1B27-4D10-9305-02FCE500557E}|TestSigCapt_WPF\\TestSigCapt_WPF.csproj|c:\\users\\visio\\documents\\versioning\\sdk-for-signature-windows\\samples\\vs2022\\testsigcapt_wpf\\testsigcapt_wpf\\mainwindow.xaml.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{34C6B3F6-1B27-4D10-9305-02FCE500557E}|TestSigCapt_WPF\\TestSigCapt_WPF.csproj|solutionrelative:testsigcapt_wpf\\mainwindow.xaml.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{34C6B3F6-1B27-4D10-9305-02FCE500557E}|TestSigCapt_WPF\\TestSigCapt_WPF.csproj|C:\\Users\\visio\\Documents\\Versioning\\sdk-for-signature-windows\\Samples\\VS2022\\TestSigCapt_WPF\\testsigcapt_wpf\\mainwindow.xaml||{F11ACC28-31D1-4C80-A34B-F4E09D3D753C}",
+      "RelativeMoniker": "D:0:0:{34C6B3F6-1B27-4D10-9305-02FCE500557E}|TestSigCapt_WPF\\TestSigCapt_WPF.csproj|solutionrelative:testsigcapt_wpf\\mainwindow.xaml||{F11ACC28-31D1-4C80-A34B-F4E09D3D753C}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{34C6B3F6-1B27-4D10-9305-02FCE500557E}|TestSigCapt_WPF\\TestSigCapt_WPF.csproj|C:\\Users\\visio\\Documents\\Versioning\\sdk-for-signature-windows\\Samples\\VS2022\\TestSigCapt_WPF\\testsigcapt_wpf\\app.xaml.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{34C6B3F6-1B27-4D10-9305-02FCE500557E}|TestSigCapt_WPF\\TestSigCapt_WPF.csproj|solutionrelative:testsigcapt_wpf\\app.xaml.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    }
+  ],
+  "DocumentGroupContainers": [
+    {
+      "Orientation": 0,
+      "VerticalTabListWidth": 256,
+      "DocumentGroups": [
+        {
+          "DockedWidth": 200,
+          "SelectedChildIndex": 1,
+          "Children": [
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "MainWindow.xaml",
+              "DocumentMoniker": "C:\\Users\\visio\\Documents\\Versioning\\sdk-for-signature-windows\\Samples\\VS2022\\TestSigCapt_WPF\\TestSigCapt_WPF\\MainWindow.xaml",
+              "RelativeDocumentMoniker": "TestSigCapt_WPF\\MainWindow.xaml",
+              "ToolTip": "C:\\Users\\visio\\Documents\\Versioning\\sdk-for-signature-windows\\Samples\\VS2022\\TestSigCapt_WPF\\TestSigCapt_WPF\\MainWindow.xaml",
+              "RelativeToolTip": "TestSigCapt_WPF\\MainWindow.xaml",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003549|",
+              "WhenOpened": "2025-09-24T12:13:22.951Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "MainWindow.xaml.cs",
+              "DocumentMoniker": "C:\\Users\\visio\\Documents\\Versioning\\sdk-for-signature-windows\\Samples\\VS2022\\TestSigCapt_WPF\\TestSigCapt_WPF\\MainWindow.xaml.cs",
+              "RelativeDocumentMoniker": "TestSigCapt_WPF\\MainWindow.xaml.cs",
+              "ToolTip": "C:\\Users\\visio\\Documents\\Versioning\\sdk-for-signature-windows\\Samples\\VS2022\\TestSigCapt_WPF\\TestSigCapt_WPF\\MainWindow.xaml.cs",
+              "RelativeToolTip": "TestSigCapt_WPF\\MainWindow.xaml.cs",
+              "ViewState": "AgIAAB4AAAAAAAAAAAAAAD8AAAA6AAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-09-24T12:13:23.151Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "App.xaml.cs",
+              "DocumentMoniker": "C:\\Users\\visio\\Documents\\Versioning\\sdk-for-signature-windows\\Samples\\VS2022\\TestSigCapt_WPF\\TestSigCapt_WPF\\App.xaml.cs",
+              "RelativeDocumentMoniker": "TestSigCapt_WPF\\App.xaml.cs",
+              "ToolTip": "C:\\Users\\visio\\Documents\\Versioning\\sdk-for-signature-windows\\Samples\\VS2022\\TestSigCapt_WPF\\TestSigCapt_WPF\\App.xaml.cs",
+              "RelativeToolTip": "TestSigCapt_WPF\\App.xaml.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-09-24T12:13:23.186Z"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
