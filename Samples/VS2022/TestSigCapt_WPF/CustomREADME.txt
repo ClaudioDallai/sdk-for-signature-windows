@@ -17,3 +17,4 @@ IMPORTANTE:
 
 DOCS:
 https://developer-docs.wacom.com/docs/overview/sdks/sdk-for-signature/
+https://www.wacom.com/it-it/support/product-support/drivers
