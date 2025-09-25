@@ -8,27 +8,21 @@
   Copyright (c) 2020 Wacom Co. Ltd. All rights reserved.
   
 ********************************************************/
+
 using FlSigCaptLib;
 using FLSIGCTLLib;
+using iTextSharp.text;
+using iTextSharp.text.pdf;
+using iTextSharp.text.pdf.parser;
 using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Diagnostics;
-using System.Drawing;
 using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.Runtime.InteropServices;
+using System.Runtime.Remoting.Messaging;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Interop;
-using System.Windows.Media;
 using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
+using Image = iTextSharp.text.Image;
+using Vector = iTextSharp.text.pdf.parser.Vector;
 
 
 namespace TestSigCapt_WPF
@@ -38,15 +32,19 @@ namespace TestSigCapt_WPF
     /// </summary>
     public partial class MainWindow : Window
     {
+        private readonly string _freeLicense = "eyJhbGciOiJSUzUxMiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiI3YmM5Y2IxYWIxMGE0NmUxODI2N2E5MTJkYTA2ZTI3NiIsImV4cCI6MjE0NzQ4MzY0NywiaWF0IjoxNTYwOTUwMjcyLCJyaWdodHMiOlsiU0lHX1NES19DT1JFIiwiU0lHQ0FQVFhfQUNDRVNTIl0sImRldmljZXMiOlsiV0FDT01fQU5ZIl0sInR5cGUiOiJwcm9kIiwibGljX25hbWUiOiJTaWduYXR1cmUgU0RLIiwid2Fjb21faWQiOiI3YmM5Y2IxYWIxMGE0NmUxODI2N2E5MTJkYTA2ZTI3NiIsImxpY191aWQiOiJiODUyM2ViYi0xOGI3LTQ3OGEtYTlkZS04NDlmZTIyNmIwMDIiLCJhcHBzX3dpbmRvd3MiOltdLCJhcHBzX2lvcyI6W10sImFwcHNfYW5kcm9pZCI6W10sIm1hY2hpbmVfaWRzIjpbXX0.ONy3iYQ7lC6rQhou7rz4iJT_OJ20087gWz7GtCgYX3uNtKjmnEaNuP3QkjgxOK_vgOrTdwzD-nm-ysiTDs2GcPlOdUPErSp_bcX8kFBZVmGLyJtmeInAW6HuSp2-57ngoGFivTH_l1kkQ1KMvzDKHJbRglsPpd4nVHhx9WkvqczXyogldygvl0LRidyPOsS5H2GYmaPiyIp9In6meqeNQ1n9zkxSHo7B11mp_WXJXl0k1pek7py8XYCedCNW5qnLi4UCNlfTd6Mk9qz31arsiWsesPeR9PN121LBJtiPi023yQU8mgb9piw_a-ccciviJuNsEuRDN3sGnqONG3dMSA";
+
         public MainWindow()
         {
             InitializeComponent();
         }
         private void btnSign_Click(object sender, RoutedEventArgs e)
         {
+            String signTargetPath = "";
+
             print("btnSign was pressed");
             SigCtl sigCtl = new SigCtl();
-            sigCtl.Licence = "eyJhbGciOiJSUzUxMiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiI3YmM5Y2IxYWIxMGE0NmUxODI2N2E5MTJkYTA2ZTI3NiIsImV4cCI6MjE0NzQ4MzY0NywiaWF0IjoxNTYwOTUwMjcyLCJyaWdodHMiOlsiU0lHX1NES19DT1JFIiwiU0lHQ0FQVFhfQUNDRVNTIl0sImRldmljZXMiOlsiV0FDT01fQU5ZIl0sInR5cGUiOiJwcm9kIiwibGljX25hbWUiOiJTaWduYXR1cmUgU0RLIiwid2Fjb21faWQiOiI3YmM5Y2IxYWIxMGE0NmUxODI2N2E5MTJkYTA2ZTI3NiIsImxpY191aWQiOiJiODUyM2ViYi0xOGI3LTQ3OGEtYTlkZS04NDlmZTIyNmIwMDIiLCJhcHBzX3dpbmRvd3MiOltdLCJhcHBzX2lvcyI6W10sImFwcHNfYW5kcm9pZCI6W10sIm1hY2hpbmVfaWRzIjpbXX0.ONy3iYQ7lC6rQhou7rz4iJT_OJ20087gWz7GtCgYX3uNtKjmnEaNuP3QkjgxOK_vgOrTdwzD-nm-ysiTDs2GcPlOdUPErSp_bcX8kFBZVmGLyJtmeInAW6HuSp2-57ngoGFivTH_l1kkQ1KMvzDKHJbRglsPpd4nVHhx9WkvqczXyogldygvl0LRidyPOsS5H2GYmaPiyIp9In6meqeNQ1n9zkxSHo7B11mp_WXJXl0k1pek7py8XYCedCNW5qnLi4UCNlfTd6Mk9qz31arsiWsesPeR9PN121LBJtiPi023yQU8mgb9piw_a-ccciviJuNsEuRDN3sGnqONG3dMSA";
+            sigCtl.Licence = _freeLicense;
             //DynamicCapture dc = new DynamicCaptureClass();
             DynamicCapture dc = new FlSigCaptLib.DynamicCapture();
             DynamicCaptureResult res = dc.Capture(sigCtl, "Mario Rossi", "Presentazione Esempio 1", null, null);
@@ -56,6 +54,8 @@ namespace TestSigCapt_WPF
                 SigObj sigObj = (SigObj)sigCtl.Signature;
                 sigObj.set_ExtraData("AdditionalData", "C# test: Additional data");
 
+                //var testRead = sigObj.ExtraData["AdditionalData"]; // Works
+
                 String dateStr = DateTime.Now.ToString("hhmmss");
 
                 string folderPath = @"C:\temp";
@@ -64,17 +64,17 @@ namespace TestSigCapt_WPF
                     Directory.CreateDirectory(folderPath);
                 }
 
-                String filename = "C:\\temp\\sig" + dateStr + ".png";
-                print("Outputting to file " + filename);
+                signTargetPath = "C:\\temp\\sig" + dateStr + ".png";
+                print("Outputting to file " + signTargetPath);
                 try
                 {
                     //print("Saving signature to file " + filename);
-                    sigObj.RenderBitmap(filename, 200, 150, "image/png", 0.5f, 0xff0000, 0xffffff, 10.0f, 10.0f, RBFlags.RenderOutputFilename | RBFlags.RenderColor32BPP | RBFlags.RenderEncodeData);
+                    sigObj.RenderBitmap(signTargetPath, 200, 150, "image/png", 0.5f, 0xff0000, 0xffffff, 10.0f, 10.0f, RBFlags.RenderOutputFilename | RBFlags.RenderColor32BPP | RBFlags.RenderEncodeData);
 
-                    print("Loading image from " + filename);
+                    print("Loading image from " + signTargetPath);
                     BitmapImage src = new BitmapImage();
                     src.BeginInit();
-                    src.UriSource = new Uri(filename, UriKind.Absolute);
+                    src.UriSource = new Uri(signTargetPath, UriKind.Absolute);
                     src.EndInit();
 
                     imgSig.Source = src;
@@ -96,6 +96,61 @@ namespace TestSigCapt_WPF
                     default: print("Unexpected error code "); break;
                 }
             }
+
+
+
+
+            if (File.Exists(signTargetPath))
+            {
+                string marker = "{{{SIGN_HERE}}}";
+                PdfReader reader = new PdfReader(@"C:\Users\visio\Desktop\test.pdf");
+                using (FileStream fs = new FileStream(@"C:\Users\visio\Desktop\Result.pdf", FileMode.Create))
+                using (PdfStamper stamper = new PdfStamper(reader, fs))
+                {
+                    int pageNum = 1;
+
+                    var strategy = new TextLocationStrategyChar(marker);
+                    var processor = new PdfContentStreamProcessor(strategy);
+
+                    var pageDic = reader.GetPageN(pageNum);
+                    var resourcesDic = pageDic.GetAsDict(PdfName.RESOURCES);
+                    processor.ProcessContent(ContentByteUtils.GetContentBytesForPage(reader, pageNum), resourcesDic);
+
+                    strategy.FinalizeSearch();
+
+                    if (strategy.MarkerPositions.Count > 0)
+                    {
+                        PdfContentByte canvas = stamper.GetOverContent(pageNum);
+                        iTextSharp.text.Image img = iTextSharp.text.Image.GetInstance(signTargetPath);
+
+                        foreach (var pos in strategy.MarkerPositions)
+                        {
+                            float rectWidth = 100f;  // larghezza area da coprire
+                            float rectHeight = 20f;  // altezza area da coprire
+                            float offsetY = -5f;     // piccolo offset verticale per posizionare meglio
+
+                            // disegna rettangolo bianco sopra il testo marker
+                            canvas.SetColorFill(BaseColor.WHITE);
+                            canvas.Rectangle(pos[Vector.I1], pos[Vector.I2] + offsetY, rectWidth, rectHeight);
+                            canvas.Fill();
+
+
+                            img.SetAbsolutePosition(pos[Vector.I1], pos[Vector.I2]);
+                            canvas.AddImage(img);
+                        }
+                    }
+                    else
+                    {
+                        Console.WriteLine("Marker non trovato");
+                    }
+                }
+
+            }
+            else 
+            {
+                Console.WriteLine();
+            }
+
 
             //// Invocazione di Wacom SignPRO API. Richiede licenza premium.
             //// Leggi il contenuto del file JSON
