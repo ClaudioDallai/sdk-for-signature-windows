@@ -1,5 +1,0 @@
-C:\Users\visio\Documents\Versioning\sdk-for-signature-windows\Samples\VS2022\TestWizCapt_WPF\TestWizCapt_WPF\obj\x86\Debug\TestWizCapt_WPF.csproj.AssemblyReference.cache
-C:\Users\visio\Documents\Versioning\sdk-for-signature-windows\Samples\VS2022\TestWizCapt_WPF\TestWizCapt_WPF\obj\x86\Debug\MainWindow.g.cs
-C:\Users\visio\Documents\Versioning\sdk-for-signature-windows\Samples\VS2022\TestWizCapt_WPF\TestWizCapt_WPF\obj\x86\Debug\App.g.cs
-C:\Users\visio\Documents\Versioning\sdk-for-signature-windows\Samples\VS2022\TestWizCapt_WPF\TestWizCapt_WPF\obj\x86\Debug\TestWizCapt_WPF_MarkupCompile.cache
-C:\Users\visio\Documents\Versioning\sdk-for-signature-windows\Samples\VS2022\TestWizCapt_WPF\TestWizCapt_WPF\obj\x86\Debug\TestWizCapt_WPF_MarkupCompile.lref
