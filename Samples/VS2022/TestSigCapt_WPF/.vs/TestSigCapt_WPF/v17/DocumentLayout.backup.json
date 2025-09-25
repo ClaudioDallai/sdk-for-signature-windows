@@ -33,7 +33,8 @@
               "ToolTip": "C:\\Users\\visio\\Documents\\Versioning\\sdk-for-signature-windows\\Samples\\VS2022\\TestSigCapt_WPF\\TestSigCapt_WPF\\MainWindow.xaml",
               "RelativeToolTip": "TestSigCapt_WPF\\MainWindow.xaml",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003549|",
-              "WhenOpened": "2025-09-24T12:13:22.951Z"
+              "WhenOpened": "2025-09-24T12:13:22.951Z",
+              "EditorCaption": ""
             },
             {
               "$type": "Document",
@@ -43,7 +44,7 @@
               "RelativeDocumentMoniker": "TestSigCapt_WPF\\MainWindow.xaml.cs",
               "ToolTip": "C:\\Users\\visio\\Documents\\Versioning\\sdk-for-signature-windows\\Samples\\VS2022\\TestSigCapt_WPF\\TestSigCapt_WPF\\MainWindow.xaml.cs",
               "RelativeToolTip": "TestSigCapt_WPF\\MainWindow.xaml.cs",
-              "ViewState": "AgIAAEcAAAAAAAAAAAAAAGMAAABMAAAAAAAAAA==",
+              "ViewState": "AgIAAFQAAAAAAAAAAAAIwGgAAAAyAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2025-09-24T12:13:23.151Z",
               "EditorCaption": ""
@@ -58,7 +59,8 @@
               "RelativeToolTip": "TestSigCapt_WPF\\App.xaml.cs",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-09-24T12:13:23.186Z"
+              "WhenOpened": "2025-09-24T12:13:23.186Z",
+              "EditorCaption": ""
             }
           ]
         }

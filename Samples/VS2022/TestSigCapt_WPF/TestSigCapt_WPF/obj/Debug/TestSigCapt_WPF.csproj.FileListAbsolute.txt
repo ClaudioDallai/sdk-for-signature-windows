@@ -17,3 +17,8 @@ C:\Users\visio\Documents\Versioning\sdk-for-signature-windows\Samples\VS2022\Tes
 C:\Users\visio\Documents\Versioning\sdk-for-signature-windows\Samples\VS2022\TestSigCapt_WPF\TestSigCapt_WPF\obj\Debug\TestSigCapt_WPF.exe
 C:\Users\visio\Documents\Versioning\sdk-for-signature-windows\Samples\VS2022\TestSigCapt_WPF\TestSigCapt_WPF\obj\Debug\TestSigCapt_WPF.pdb
 C:\Users\visio\Documents\Versioning\sdk-for-signature-windows\Samples\VS2022\TestSigCapt_WPF\TestSigCapt_WPF\obj\Debug\TestSigCapt_WPF.exe.config
+C:\Users\visio\Documents\Versioning\sdk-for-signature-windows\Samples\VS2022\TestSigCapt_WPF\TestSigCapt_WPF\bin\Debug\BouncyCastle.Cryptography.dll
+C:\Users\visio\Documents\Versioning\sdk-for-signature-windows\Samples\VS2022\TestSigCapt_WPF\TestSigCapt_WPF\bin\Debug\itextsharp.dll
+C:\Users\visio\Documents\Versioning\sdk-for-signature-windows\Samples\VS2022\TestSigCapt_WPF\TestSigCapt_WPF\bin\Debug\BouncyCastle.Cryptography.xml
+C:\Users\visio\Documents\Versioning\sdk-for-signature-windows\Samples\VS2022\TestSigCapt_WPF\TestSigCapt_WPF\bin\Debug\itextsharp.xml
+C:\Users\visio\Documents\Versioning\sdk-for-signature-windows\Samples\VS2022\TestSigCapt_WPF\TestSigCapt_WPF\obj\Debug\TestSigC.161D3385.Up2Date
