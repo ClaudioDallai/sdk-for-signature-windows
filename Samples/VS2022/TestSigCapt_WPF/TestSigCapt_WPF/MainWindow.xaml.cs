@@ -98,8 +98,6 @@ namespace TestSigCapt_WPF
             }
 
 
-
-
             if (File.Exists(signTargetPath))
             {
                 string marker = "{{{SIGN_HERE}}}";
@@ -125,17 +123,9 @@ namespace TestSigCapt_WPF
 
                         foreach (var pos in strategy.MarkerPositions)
                         {
-                            float rectWidth = 100f;  // larghezza area da coprire
-                            float rectHeight = 20f;  // altezza area da coprire
-                            float offsetY = -5f;     // piccolo offset verticale per posizionare meglio
-
-                            // disegna rettangolo bianco sopra il testo marker
-                            canvas.SetColorFill(BaseColor.WHITE);
-                            canvas.Rectangle(pos[Vector.I1], pos[Vector.I2] + offsetY, rectWidth, rectHeight);
-                            canvas.Fill();
-
-
-                            img.SetAbsolutePosition(pos[Vector.I1], pos[Vector.I2]);
+                            // Move of hlaf height to center the image (high left corner) on the marker.
+                            // We do not move X because the sign  must be all visible, and it would be risky.
+                            img.SetAbsolutePosition(pos[Vector.I1], pos[Vector.I2] - img.Height * 0.5f);
                             canvas.AddImage(img);
                         }
                     }
