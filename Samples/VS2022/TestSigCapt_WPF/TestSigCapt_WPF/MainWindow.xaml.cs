@@ -8,9 +8,12 @@
   Copyright (c) 2020 Wacom Co. Ltd. All rights reserved.
   
 ********************************************************/
+using FlSigCaptLib;
+using FLSIGCTLLib;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Linq;
@@ -26,9 +29,6 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
-
-using FlSigCaptLib;
-using FLSIGCTLLib;
 
 
 namespace TestSigCapt_WPF
@@ -96,6 +96,20 @@ namespace TestSigCapt_WPF
                     default: print("Unexpected error code "); break;
                 }
             }
+
+            //// Invocazione di Wacom SignPRO API. Richiede licenza premium.
+            //// Leggi il contenuto del file JSON
+            //string jsonPath = @"C:\Users\visio\Downloads\api-demo-v4\scripts\API Command Demo\demo api autosave.txt";
+            //string json = File.ReadAllText(jsonPath);
+
+            //// Converti in Base64
+            //string base64 = Convert.ToBase64String(Encoding.UTF8.GetBytes(json));
+
+            //// Esegui Sign Pro PDF con il parametro API
+            //Process.Start(
+            //    @"C:\Program Files (x86)\Wacom sign pro PDF\Sign Pro PDF.exe",
+            //    $"-api signpro:{base64}"
+            //);
         }
 
         private void btnExit_Click(object sender, RoutedEventArgs e)
