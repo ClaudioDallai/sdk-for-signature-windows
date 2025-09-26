@@ -98,6 +98,7 @@ namespace TestSigCapt_WPF
                     case DynamicCaptureResult.DynCaptCancel: print("signature cancelled"); break;
                     case DynamicCaptureResult.DynCaptError: print("no capture service available"); break;
                     case DynamicCaptureResult.DynCaptPadError: print("signing device error"); break;
+                    case DynamicCaptureResult.DynCaptNotLicensed: print("license error or device is not connected"); break;
                     default: print("Unexpected error code "); break;
                 }
             }
