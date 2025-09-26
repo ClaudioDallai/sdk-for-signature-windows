@@ -113,8 +113,8 @@ namespace TestSigCapt_WPF
 
                 // All these vars need to be managed through MVC.
                 string marker = "{{{SIGN_HERE}}}";
-                //string inputPath = @"C:\Users\visio\Desktop\LoremIpsumRight.pdf";
-                string inputPath = @"C:\Users\visio\Desktop\LoremIpsumLeft.pdf";
+                string inputPath = @"C:\Users\visio\Desktop\LoremIpsumRight.pdf";
+                //string inputPath = @"C:\Users\visio\Desktop\LoremIpsumLeft.pdf";
                 string imgPath = signTargetPath;
                 string outputPath = @"C:\Users\visio\Desktop\Result.pdf";
 
@@ -161,8 +161,9 @@ namespace TestSigCapt_WPF
                     PdfSharp.Drawing.XImage signatureImage = PdfSharp.Drawing.XImage.FromFile(signTargetPath);
 
                     // PdfPig counts Y from top, PDFsharp from bottom
-                    double posX = markerFoundX - signatureImage.PixelWidth / 2;
-                    double posY = pageToSign.Height.Point - markerFoundY - signatureImage.PixelHeight / 2;
+                    // X uses same coordinates.
+                    double posX = markerFoundX;
+                    double posY = pageToSign.Height.Point - markerFoundY - signatureImage.PixelHeight * 0.5f;
 
                     gfx.DrawImage(signatureImage, posX, posY, signatureImage.PixelWidth, signatureImage.PixelHeight);
 
