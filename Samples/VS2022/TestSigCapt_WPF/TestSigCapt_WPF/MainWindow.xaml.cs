@@ -42,6 +42,7 @@ namespace TestSigCapt_WPF
         {
             InitializeComponent();
         }
+
         private void btnSign_Click(object sender, RoutedEventArgs e)
         {
             String signTargetPath = "";
