@@ -213,6 +213,7 @@ namespace TestSigCapt_WPF
                     // A .png intead could be loaded, so in theory we can save both pdf (encrypted) and the sign's png in a protected ZIP. The use MiniScope on the png inside given necessary password.
                     // https://developer-support.wacom.com/hc/en-us/articles/9354488252311-How-do-I-copy-paste-a-signature-from-sign-pro-PDF-into-another-Wacom-application
 
+                    // !!! PDFSharp supports insering images (such as pngs) preserving metadata, but doesn't support real Sign insertion (certificate-based). That's pratically the same for all MIT libraries. !!!
                 }
 
 
