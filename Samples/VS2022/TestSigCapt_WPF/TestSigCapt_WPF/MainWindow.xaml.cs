@@ -18,14 +18,14 @@ using System;
 using System.IO;
 using System.Windows;
 using System.Windows.Media.Imaging;
+using System.Windows.Controls;
+using System.Data.Odbc;
 
 // PDF manipulation
 using PdfPig = UglyToad.PdfPig;
 using PdfSharp.Pdf;
 using PdfSharp.Pdf.IO;
 using PdfSharp.Drawing;
-using System.Windows.Controls;
-using System.Data.Odbc;
 
 
 namespace TestSigCapt_WPF
