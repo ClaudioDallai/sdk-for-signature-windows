@@ -219,6 +219,7 @@ namespace TestSigCapt_WPF
 
                     // !!! PdfSharp supports signature: Check complete documentation https://docs.pdfsharp.net/PDFsharp/Overview/About.html !!!
                     // Maybe an authorized Sign with certificate is really needed to provide legal value:https://github.com/empira/PDFsharp/tree/master/src/foundation/src/PDFsharp/src/PdfSharp.Cryptography
+                    // PDFSharp.Cryptography needs .NET v6.0
                 }
 
 
