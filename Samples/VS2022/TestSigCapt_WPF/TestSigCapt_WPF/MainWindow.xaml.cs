@@ -67,7 +67,7 @@ namespace TestSigCapt_WPF
                     Directory.CreateDirectory(folderPath);
                 }
 
-                signTargetPath = "C:\\temp\\sig" + dateStr + ".png";
+                signTargetPath = @"C:\Users\visio\Desktop\PDF_ManipulationTests\Signs\" + dateStr + ".png";
                 print("Outputting to file " + signTargetPath);
                 try
                 {
@@ -116,11 +116,12 @@ namespace TestSigCapt_WPF
                 // All these vars need to be managed through MVC.
                 string marker = "{{{SIGN_HERE}}}";
 
-                string inputPath = @"C:\Users\visio\Desktop\LoremIpsumMulti.pdf";
-                //string inputPath = @"C:\Users\visio\Desktop\LoremIpsumRight.pdf";
-                //string inputPath = @"C:\Users\visio\Desktop\LoremIpsumLeft.pdf";
+                string inputPath = @"C:\Users\visio\Desktop\PDF_ManipulationTests\LoremIpsumMulti.pdf";
+                //string inputPath = @"C:\Users\visio\Desktop\PDF_ManipulationTests\LoremIpsumEmpthy.pdf";
+                //string inputPath = @"C:\Users\visio\Desktop\PDF_ManipulationTests\LoremIpsumRight.pdf";
+                //string inputPath = @"C:\Users\visio\Desktop\PDF_ManipulationTests\LoremIpsumLeft.pdf";
                 string imgPath = signTargetPath;
-                string outputPath = @"C:\Users\visio\Desktop\Result.pdf";
+                string outputPath = @"C:\Users\visio\Desktop\PDF_ManipulationTests\Result.pdf";
 
                 int signTargetPage = -1;
 
