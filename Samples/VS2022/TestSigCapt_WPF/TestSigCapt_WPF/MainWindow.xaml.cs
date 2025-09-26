@@ -156,6 +156,7 @@ namespace TestSigCapt_WPF
                         return;
                     }
 
+                    // Need to add all null checks. Even if we're inside Try
                     PdfSharp.Pdf.PdfPage pageToSign = pdf.Pages[signTargetPage - 1];
 
                     PdfSharp.Drawing.XGraphics gfx = PdfSharp.Drawing.XGraphics.FromPdfPage(pageToSign);
