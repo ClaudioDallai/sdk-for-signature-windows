@@ -18,6 +18,7 @@ using System;
 using System.IO;
 using System.Windows;
 using System.Windows.Media.Imaging;
+using System.Collections.Generic;
 using System.Windows.Controls;
 using System.Data.Odbc;
 
@@ -114,13 +115,16 @@ namespace TestSigCapt_WPF
 
                 // All these vars need to be managed through MVC.
                 string marker = "{{{SIGN_HERE}}}";
-                string inputPath = @"C:\Users\visio\Desktop\LoremIpsumRight.pdf";
+
+                string inputPath = @"C:\Users\visio\Desktop\LoremIpsumMulti.pdf";
+                //string inputPath = @"C:\Users\visio\Desktop\LoremIpsumRight.pdf";
                 //string inputPath = @"C:\Users\visio\Desktop\LoremIpsumLeft.pdf";
                 string imgPath = signTargetPath;
                 string outputPath = @"C:\Users\visio\Desktop\Result.pdf";
 
                 int signTargetPage = -1;
-                double markerFoundX = 0, markerFoundY = 0;
+
+                Dictionary<int, List<Vector>> markerPositions = new Dictionary<int, List<Vector>>();
 
                 using (PdfPig.PdfDocument document = PdfPig.PdfDocument.Open(inputPath))
                 {
@@ -128,46 +132,63 @@ namespace TestSigCapt_WPF
                     {
                         foreach (var word in page.GetWords())
                         {
-                            if ((word.Text.Contains(marker)))
+                            if (word.Text.Contains(marker))
                             {
                                 signTargetPage = page.Number;
-                                markerFoundX = word.BoundingBox.Left;
-                                markerFoundY = word.BoundingBox.Top;
-                                break;
+
+                                if (markerPositions.ContainsKey(signTargetPage))
+                                {
+                                    markerPositions[signTargetPage].Add(new Vector(word.BoundingBox.Left, word.BoundingBox.Top));
+                                }
+                                else
+                                {
+                                    markerPositions.Add(signTargetPage, new List<Vector> { new Vector(word.BoundingBox.Left, word.BoundingBox.Top) });
+                                }
                             }
                         }
                     }
 
                     // PDFPig counts from page 1.
-                    if (signTargetPage <= 0)
+                    HashSet<int> invalidKeys = new HashSet<int>();
+                    foreach (KeyValuePair<int, List<Vector>> pair in markerPositions)
                     {
-                        return;
+                        if (pair.Key <= 0 || pair.Key > document.NumberOfPages)
+                        {
+                            invalidKeys.Add(pair.Key);
+                        }
                     }
 
+                    foreach(int invKey in invalidKeys)
+                    {
+                        if (markerPositions.ContainsKey(invKey))
+                        {
+                            markerPositions.Remove(invKey);
+                        }
+                    }
 
                 }
 
                 using (PdfSharp.Pdf.PdfDocument pdf = PdfSharp.Pdf.IO.PdfReader.Open(inputPath, PdfDocumentOpenMode.Modify))
                 {
 
-                    // PdfPig counts from 1, PdfSharp from 0. 
-                    if (signTargetPage <= 0 || signTargetPage > pdf.Pages.Count)
+                    // Need to add all null checks. Even if we're inside Try.
+                    foreach (KeyValuePair<int, List<Vector>> pair in markerPositions)
                     {
-                        return;
+                        PdfSharp.Pdf.PdfPage pageToSign = pdf.Pages[pair.Key - 1];
+
+                        PdfSharp.Drawing.XGraphics gfx = PdfSharp.Drawing.XGraphics.FromPdfPage(pageToSign);
+                        PdfSharp.Drawing.XImage signatureImage = PdfSharp.Drawing.XImage.FromFile(signTargetPath);
+
+                        // PdfPig counts Y from top, PDFsharp from bottom.
+                        // X uses same coordinates.
+                        foreach(Vector markerInstance in pair.Value)
+                        {
+                            double posX = markerInstance.X;
+                            double posY = pageToSign.Height.Point - markerInstance.Y - signatureImage.PixelHeight * 0.5f;
+
+                            gfx.DrawImage(signatureImage, posX, posY, signatureImage.PixelWidth, signatureImage.PixelHeight);
+                        }
                     }
-
-                    // Need to add all null checks. Even if we're inside Try
-                    PdfSharp.Pdf.PdfPage pageToSign = pdf.Pages[signTargetPage - 1];
-
-                    PdfSharp.Drawing.XGraphics gfx = PdfSharp.Drawing.XGraphics.FromPdfPage(pageToSign);
-                    PdfSharp.Drawing.XImage signatureImage = PdfSharp.Drawing.XImage.FromFile(signTargetPath);
-
-                    // PdfPig counts Y from top, PDFsharp from bottom
-                    // X uses same coordinates.
-                    double posX = markerFoundX;
-                    double posY = pageToSign.Height.Point - markerFoundY - signatureImage.PixelHeight * 0.5f;
-
-                    gfx.DrawImage(signatureImage, posX, posY, signatureImage.PixelWidth, signatureImage.PixelHeight);
 
                     pdf.Save(outputPath);
                 }
@@ -228,7 +249,6 @@ namespace TestSigCapt_WPF
             catch
             {
                 Console.WriteLine();
-
             }
 
 
