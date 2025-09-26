@@ -191,7 +191,26 @@ namespace TestSigCapt_WPF
                         }
                     }
 
+                    pdf.SecurityHandler.SetEncryptionToV2With128Bits();
+                    //pdf.SecurityHandler.SetEncryptionToV5(true);
+
+                    // No permit.
+                    pdf.SecuritySettings.PermitModifyDocument = false;
+                    pdf.SecuritySettings.PermitAssembleDocument = false;
+                    pdf.SecuritySettings.PermitFullQualityPrint = false;
+                    pdf.SecuritySettings.PermitPrint = false;
+                    pdf.SecuritySettings.PermitFormsFill = false;
+                    pdf.SecuritySettings.PermitAnnotations = false;
+
+                    // Permit.
+                    pdf.SecuritySettings.PermitExtractContent = true;
+                    pdf.SecuritySettings.UserPassword = "Admin";
+
                     pdf.Save(outputPath);
+
+                    // ATTENTION: Wacom SignatureMiniscope cannot open encrypted files. Also, copy-paste of biomethric signature does not work (it works on the real Wacoom SignatureScope full version).
+                    // A png intead could be loaded, so in theory we can save both pdf (encrypted) and the sign's png in a protected ZIP. The use MiniScope on the png inside given necessary password.
+                    // https://developer-support.wacom.com/hc/en-us/articles/9354488252311-How-do-I-copy-paste-a-signature-from-sign-pro-PDF-into-another-Wacom-application
                 }
 
 
