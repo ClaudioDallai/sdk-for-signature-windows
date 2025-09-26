@@ -9,17 +9,23 @@
   
 ********************************************************/
 
+// Wacom Ink sdk
 using FlSigCaptLib;
 using FLSIGCTLLib;
-using iTextSharp.text.pdf;
-using iTextSharp.text.pdf.parser;
+
+// C# framework
 using System;
 using System.IO;
 using System.Windows;
 using System.Windows.Media.Imaging;
 
-using Image = iTextSharp.text.Image;
-using Vector = iTextSharp.text.pdf.parser.Vector;
+// PDF manipulation
+using PdfPig = UglyToad.PdfPig;
+using PdfSharp.Pdf;
+using PdfSharp.Pdf.IO;
+using PdfSharp.Drawing;
+using System.Windows.Controls;
+using System.Data.Odbc;
 
 
 namespace TestSigCapt_WPF
@@ -97,59 +103,138 @@ namespace TestSigCapt_WPF
             }
 
 
-            if (File.Exists(signTargetPath))
+            if (!File.Exists(signTargetPath))
             {
+                return;
+            }
+
+            try
+            {
+
+                // All these vars need to be managed through MVC.
                 string marker = "{{{SIGN_HERE}}}";
-                PdfReader reader = new PdfReader(@"C:\Users\visio\Desktop\LoremIpsumRight.pdf");
-                //PdfReader reader = new PdfReader(@"C:\Users\visio\Desktop\LoremIpsumLeft.pdf");
-                using (FileStream fs = new FileStream(@"C:\Users\visio\Desktop\Result.pdf", FileMode.Create))
-                using (PdfStamper stamper = new PdfStamper(reader, fs))
+                //string inputPath = @"C:\Users\visio\Desktop\LoremIpsumRight.pdf";
+                string inputPath = @"C:\Users\visio\Desktop\LoremIpsumLeft.pdf";
+                string imgPath = signTargetPath;
+                string outputPath = @"C:\Users\visio\Desktop\Result.pdf";
+
+                int signTargetPage = -1;
+                double markerFoundX = 0, markerFoundY = 0;
+
+                using (PdfPig.PdfDocument document = PdfPig.PdfDocument.Open(inputPath))
                 {
-                    int pageNum = 1;
-
-                    var strategy = new TextLocationStrategyChar(marker);
-                    var processor = new PdfContentStreamProcessor(strategy);
-
-                    var pageDic = reader.GetPageN(pageNum);
-                    var resourcesDic = pageDic.GetAsDict(PdfName.RESOURCES);
-                    processor.ProcessContent(ContentByteUtils.GetContentBytesForPage(reader, pageNum), resourcesDic);
-
-                    strategy.FinalizeSearch();
-
-                    if (strategy.MarkerPositions.Count > 0)
+                    foreach (var page in document.GetPages())
                     {
-                        PdfContentByte canvas = stamper.GetOverContent(pageNum);
-                        iTextSharp.text.Image img = iTextSharp.text.Image.GetInstance(signTargetPath);
-
-                        foreach (var pos in strategy.MarkerPositions)
+                        foreach (var word in page.GetWords())
                         {
-                            // Move of half height and width (it depends on marker position found) to center the image (high left corner) on the marker.
-                            // To check X we consider an offset of 70% of the PDF itself.
-                            // Values are kinda hadcoded for now, and they depend on the size of the sign canvas.
-                            float resultAbsX = pos[Vector.I1] - img.Width * 0.25f;
-                            float resultAbsY = pos[Vector.I2] - img.Height * 0.5f;
-
-                            if (pos[Vector.I1] > reader.GetPageSize(pageNum).Width * 0.7f)
+                            if ((word.Text.Contains(marker)))
                             {
-                                resultAbsX = pos[Vector.I1] - img.Width * 0.5f;
+                                signTargetPage = page.Number;
+                                markerFoundX = word.BoundingBox.Left;
+                                markerFoundY = word.BoundingBox.Top;
+                                break;
                             }
-
-                            img.SetAbsolutePosition(resultAbsX, resultAbsY);
-                            canvas.AddImage(img);
                         }
                     }
-                    else
+
+                    // PDFPig counts from page 1.
+                    if (signTargetPage <= 0)
                     {
-                        Console.WriteLine("Marker non trovato");
+                        return;
                     }
+
+
                 }
 
+                using (PdfSharp.Pdf.PdfDocument pdf = PdfSharp.Pdf.IO.PdfReader.Open(inputPath, PdfDocumentOpenMode.Modify))
+                {
+
+                    // PdfPig counts from 1, PdfSharp from 0. 
+                    if (signTargetPage <= 0 || signTargetPage > pdf.Pages.Count)
+                    {
+                        return;
+                    }
+
+                    PdfSharp.Pdf.PdfPage pageToSign = pdf.Pages[signTargetPage - 1];
+
+                    PdfSharp.Drawing.XGraphics gfx = PdfSharp.Drawing.XGraphics.FromPdfPage(pageToSign);
+                    PdfSharp.Drawing.XImage signatureImage = PdfSharp.Drawing.XImage.FromFile(signTargetPath);
+
+                    // PdfPig counts Y from top, PDFsharp from bottom
+                    double posX = markerFoundX - signatureImage.PixelWidth / 2;
+                    double posY = pageToSign.Height.Point - markerFoundY - signatureImage.PixelHeight / 2;
+
+                    gfx.DrawImage(signatureImage, posX, posY, signatureImage.PixelWidth, signatureImage.PixelHeight);
+
+                    pdf.Save(outputPath);
+                }
+
+
+
+                #region No more used iTextSharp (incompatible license)
+
+                //PdfReader reader = new PdfReader(@"C:\Users\visio\Desktop\LoremIpsumRight.pdf");
+                ////PdfReader reader = new PdfReader(@"C:\Users\visio\Desktop\LoremIpsumLeft.pdf");
+                //using (FileStream fs = new FileStream(@"C:\Users\visio\Desktop\Result.pdf", FileMode.Create))
+                //using (PdfStamper stamper = new PdfStamper(reader, fs))
+                //{
+                //    int pageNum = 1;
+
+                //    var strategy = new TextLocationStrategyChar(marker);
+                //    var processor = new PdfContentStreamProcessor(strategy);
+
+                //    var pageDic = reader.GetPageN(pageNum);
+                //    var resourcesDic = pageDic.GetAsDict(PdfName.RESOURCES);
+                //    processor.ProcessContent(ContentByteUtils.GetContentBytesForPage(reader, pageNum), resourcesDic);
+
+                //    strategy.FinalizeSearch();
+
+                //    if (strategy.MarkerPositions.Count > 0)
+                //    {
+                //        PdfContentByte canvas = stamper.GetOverContent(pageNum);
+                //        iTextSharp.text.Image img = iTextSharp.text.Image.GetInstance(signTargetPath);
+
+                //        foreach (var pos in strategy.MarkerPositions)
+                //        {
+                //            // Move of half height and width (it depends on marker position found) to center the image (high left corner) on the marker.
+                //            // To check X we consider an offset of 70% of the PDF itself.
+                //            // Values are kinda hadcoded for now, and they depend on the size of the sign canvas.
+                //            float resultAbsX = pos[Vector.I1] - img.Width * 0.25f;
+                //            float resultAbsY = pos[Vector.I2] - img.Height * 0.5f;
+
+                //            if (pos[Vector.I1] > reader.GetPageSize(pageNum).Width * 0.7f)
+                //            {
+                //                resultAbsX = pos[Vector.I1] - img.Width * 0.5f;
+                //            }
+
+                //            img.SetAbsolutePosition(resultAbsX, resultAbsY);
+                //            canvas.AddImage(img);
+                //        }
+                //    }
+                //    else
+                //    {
+                //        Console.WriteLine("Marker non trovato");
+                //    }
+                //}
+
+                #endregion
+
+
+
             }
-            else 
+            catch
             {
                 Console.WriteLine();
+
             }
 
+
+
+            // ------------------------------------------------------------------------------------------------------ //
+
+
+
+            #region Wacom SignPro pdf API call tests (premium license is needed)
 
             //// Invocazione di Wacom SignPRO API. Richiede licenza premium.
             //// Leggi il contenuto del file JSON
@@ -164,6 +249,10 @@ namespace TestSigCapt_WPF
             //    @"C:\Program Files (x86)\Wacom sign pro PDF\Sign Pro PDF.exe",
             //    $"-api signpro:{base64}"
             //);
+
+            #endregion
+
+
         }
 
         private void btnExit_Click(object sender, RoutedEventArgs e)
