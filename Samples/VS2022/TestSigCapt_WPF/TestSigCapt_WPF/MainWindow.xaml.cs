@@ -21,6 +21,7 @@ using System.Windows.Media.Imaging;
 using System.Collections.Generic;
 using System.Windows.Controls;
 using System.Data.Odbc;
+using System.Security.Cryptography.Pkcs;
 
 // PDF manipulation
 using PdfPig = UglyToad.PdfPig;
@@ -217,6 +218,7 @@ namespace TestSigCapt_WPF
                     // https://developer-support.wacom.com/hc/en-us/articles/9354488252311-How-do-I-copy-paste-a-signature-from-sign-pro-PDF-into-another-Wacom-application
 
                     // !!! PdfSharp supports signature: Check complete documentation https://docs.pdfsharp.net/PDFsharp/Overview/About.html !!!
+                    // Maybe an authorized Sign with certificate is really needed to provide legal value:https://github.com/empira/PDFsharp/tree/master/src/foundation/src/PDFsharp/src/PdfSharp.Cryptography
                 }
 
 
