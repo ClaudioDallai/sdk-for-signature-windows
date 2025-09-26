@@ -27,6 +27,7 @@ using PdfPig = UglyToad.PdfPig;
 using PdfSharp.Pdf;
 using PdfSharp.Pdf.IO;
 using PdfSharp.Drawing;
+using PdfSharp.Pdf.Security;
 
 
 namespace TestSigCapt_WPF
@@ -191,20 +192,21 @@ namespace TestSigCapt_WPF
                         }
                     }
 
-                    pdf.SecurityHandler.SetEncryptionToV2With128Bits();
-                    //pdf.SecurityHandler.SetEncryptionToV5(true);
+                    // Encryption.
+                    pdf.SecurityHandler.SetEncryptionToV2With128Bits(); // Different alghoritms are available.
+                    pdf.SecuritySettings.UserPassword = "1234";
+                    pdf.SecuritySettings.OwnerPassword = "Admin";
 
                     // No permit.
                     pdf.SecuritySettings.PermitModifyDocument = false;
                     pdf.SecuritySettings.PermitAssembleDocument = false;
-                    pdf.SecuritySettings.PermitFullQualityPrint = false;
-                    pdf.SecuritySettings.PermitPrint = false;
                     pdf.SecuritySettings.PermitFormsFill = false;
                     pdf.SecuritySettings.PermitAnnotations = false;
 
                     // Permit.
                     pdf.SecuritySettings.PermitExtractContent = true;
-                    pdf.SecuritySettings.UserPassword = "Admin";
+                    pdf.SecuritySettings.PermitPrint = true;
+                    pdf.SecuritySettings.PermitFullQualityPrint = true;
 
                     pdf.Save(outputPath);
 
@@ -213,7 +215,7 @@ namespace TestSigCapt_WPF
                     // A .png intead could be loaded, so in theory we can save both pdf (encrypted) and the sign's png in a protected ZIP. The use MiniScope on the png inside given necessary password.
                     // https://developer-support.wacom.com/hc/en-us/articles/9354488252311-How-do-I-copy-paste-a-signature-from-sign-pro-PDF-into-another-Wacom-application
 
-                    // !!! PDFSharp supports insering images (such as pngs) preserving metadata, but doesn't support real Sign insertion (certificate-based). That's pratically the same for all MIT libraries. !!!
+                    // !!! PdfSharp supports signature: Check complete documentation https://docs.pdfsharp.net/PDFsharp/Overview/About.html !!!
                 }
 
 
