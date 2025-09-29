@@ -21,6 +21,7 @@ using Org.BouncyCastle.Crypto.Parameters;
 using Org.BouncyCastle.Pkcs;
 using PdfSharp.Drawing;
 using PdfSharp.Pdf;
+using PdfSharp.Pdf.Content.Objects;
 using PdfSharp.Pdf.IO;
 using PdfSharp.Pdf.Security;
 // C# framework
@@ -29,12 +30,14 @@ using System.Collections.Generic;
 using System.Data.Odbc;
 using System.Diagnostics;
 using System.IO;
+using System.Security.Cryptography;
 using System.Security.Cryptography.Pkcs;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Forms;
+using System.Windows.Input;
 using System.Windows.Media.Imaging;
 // PDF manipulation
 using PdfPig = UglyToad.PdfPig;
@@ -257,15 +260,16 @@ namespace TestSigCapt_WPF
             string reason = "Firma di prova";
             string location = "Italia";
 
-            // Load the certificate with BouncyCastle
+            // Load the certificate with BouncyCastle from .pfx file
             Pkcs12Store pk12;
             using (var fs = new FileStream(pfxPath, FileMode.Open, FileAccess.Read))
             {
-                // Usa il builder per creare lo store (evita l'errore del costruttore mancante)
+                // Usa il builder per creare lo store
                 pk12 = new Pkcs12StoreBuilder().Build();
                 pk12.Load(fs, pfxPassword.ToCharArray());
             }
 
+            // Find the alias that corresponds to a private key entry in the certificate
             string alias = null;
             foreach (string tAlias in pk12.Aliases)
             {
@@ -276,29 +280,44 @@ namespace TestSigCapt_WPF
                 }
             }
 
+            // Get private key and chain of authentication entities
             var pk = pk12.GetKey(alias).Key;
             var chain = pk12.GetCertificateChain(alias);
+
+            // Create an iTextSharp compatible chain of authentication entities (literally a cast-like)
             ICollection<Org.BouncyCastle.X509.X509Certificate> chainBC = new List<Org.BouncyCastle.X509.X509Certificate>();
             foreach (var entry in chain)
             {
                 chainBC.Add(entry.Certificate); // tipo BouncyCastle
             }
 
-
+            // Create the external signature object, specifying the private key and hashing algorithm(SHA-256)
             IExternalSignature externalSignature = new PrivateKeySignature(pk, "SHA-256");
 
             // Read the original PDF
             iTextSharp.text.pdf.PdfReader reader = new iTextSharp.text.pdf.PdfReader(inputPdf);
             using (FileStream os = new FileStream(outputPdf, FileMode.Create))
             {
-                // Stamper in modalità append per non invalidare il PDF
+                // Stamper in Append mode (not FileStream!!!) does not invalidate the PDF
+                // Stamper from iTextSharp is used to create a Signature
+                // Being in append mode, and a legally-sign, PDF modify functions are already kinda disabled
                 PdfStamper stamper = PdfStamper.CreateSignature(reader, os, '\0', null, true);
 
+                // Configure signature appearance properties (reason, location, visible signature rectangle, etc.)
                 PdfSignatureAppearance appearance = stamper.SignatureAppearance;
                 appearance.Reason = reason;
                 appearance.Location = location;
                 appearance.SetVisibleSignature(new iTextSharp.text.Rectangle(100, 100, 300, 150), 1, "Signature1");
 
+                // This explicitly manage permissions on the PDF result:
+                //public const int NOT_CERTIFIED = 0;
+                //public const int CERTIFIED_NO_CHANGES_ALLOWED = 1;
+                //public const int CERTIFIED_FORM_FILLING = 2;
+                //public const int CERTIFIED_FORM_FILLING_AND_ANNOTATIONS = 3;
+                appearance.CertificationLevel = PdfSignatureAppearance.CERTIFIED_NO_CHANGES_ALLOWED;
+
+
+                // Appearance object actually needs a PNG to take the image from. We use the one that was taken using Wacom INK SDK
                 if (File.Exists(signTargetPath))
                 {
                     var signatureImg = iTextSharp.text.Image.GetInstance(signTargetPath);
@@ -306,6 +325,7 @@ namespace TestSigCapt_WPF
                     appearance.SignatureRenderingMode = PdfSignatureAppearance.RenderingMode.GRAPHIC_AND_DESCRIPTION;
                 }
 
+                // Apply the sign
                 MakeSignature.SignDetached(appearance, externalSignature, chainBC, null, null, null, 0, CryptoStandard.CADES);
             }
 
