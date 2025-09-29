@@ -17,6 +17,9 @@ using FLSIGCTLLib;
 using System;
 using System.IO;
 using System.Windows;
+using PdfSharp.Pdf.Security;
+using System.Diagnostics;
+using System.Text;
 using System.Windows.Media.Imaging;
 using System.Collections.Generic;
 using System.Windows.Controls;
@@ -28,7 +31,6 @@ using PdfPig = UglyToad.PdfPig;
 using PdfSharp.Pdf;
 using PdfSharp.Pdf.IO;
 using PdfSharp.Drawing;
-using PdfSharp.Pdf.Security;
 
 
 namespace TestSigCapt_WPF
@@ -46,239 +48,242 @@ namespace TestSigCapt_WPF
 
         private void btnSign_Click(object sender, RoutedEventArgs e)
         {
-            String signTargetPath = "";
-
-            print("btnSign was pressed");
-            SigCtl sigCtl = new SigCtl();
-            sigCtl.Licence = _sdkLicenseKey;
-            //DynamicCapture dc = new DynamicCaptureClass();
-            DynamicCapture dc = new FlSigCaptLib.DynamicCapture();
-            DynamicCaptureResult res = dc.Capture(sigCtl, "Mario Rossi", "Presentazione Esempio 1", null, null);
-            if (res == DynamicCaptureResult.DynCaptOK)
-            {
-                print("signature captured successfully");
-                SigObj sigObj = (SigObj)sigCtl.Signature;
-                sigObj.set_ExtraData("AdditionalData", "C# test: Additional data");
-
-                //var testRead = sigObj.ExtraData["AdditionalData"]; // Works
-
-                String dateStr = DateTime.Now.ToString("hhmmss");
-
-                string folderPath = @"C:\temp";
-                if (!Directory.Exists(folderPath))
-                {
-                    Directory.CreateDirectory(folderPath);
-                }
-
-                signTargetPath = @"C:\Users\visio\Desktop\PDF_ManipulationTests\Signs\" + dateStr + ".png";
-                print("Outputting to file " + signTargetPath);
-                try
-                {
-                    //print("Saving signature to file " + filename);
-                    // Need to understand if DimensionX and DimensionY alter the image metadata. These values (200, 150) were already here in the example.
-                    sigObj.RenderBitmap(signTargetPath, 150, 100, "image/png", 0.5f, 0xff0000, 0xffffff, 10.0f, 10.0f, RBFlags.RenderOutputFilename | RBFlags.RenderColor32BPP | RBFlags.RenderEncodeData);
-
-                    print("Loading image from " + signTargetPath);
-                    BitmapImage src = new BitmapImage();
-                    src.BeginInit();
-                    src.UriSource = new Uri(signTargetPath, UriKind.Absolute);
-                    src.EndInit();
-
-                    imgSig.Source = src;
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show(ex.Message);
-                }
-
-            }
-            else
-            {
-
-                // IF WACOM STU IS NOT ATTACHED: Returns message that license is invalid!
-                print("Signature capture error res=" + (int)res + "  ( " + res + " )");
-                switch (res)
-                {
-                    case DynamicCaptureResult.DynCaptCancel: print("signature cancelled"); break;
-                    case DynamicCaptureResult.DynCaptError: print("no capture service available"); break;
-                    case DynamicCaptureResult.DynCaptPadError: print("signing device error"); break;
-                    case DynamicCaptureResult.DynCaptNotLicensed: print("license error or device is not connected"); break;
-                    default: print("Unexpected error code "); break;
-                }
-            }
 
 
-            if (!File.Exists(signTargetPath))
-            {
-                return;
-            }
+            #region Signature INK sdk and PDF Manipulation (MIT)
 
-            try
-            {
+            //String signTargetPath = "";
 
-                // All these vars need to be managed through MVC.
-                string marker = "{{{SIGN_HERE}}}";
+            //print("btnSign was pressed");
+            //SigCtl sigCtl = new SigCtl();
+            //sigCtl.Licence = _sdkLicenseKey;
+            ////DynamicCapture dc = new DynamicCaptureClass();
+            //DynamicCapture dc = new FlSigCaptLib.DynamicCapture();
+            //DynamicCaptureResult res = dc.Capture(sigCtl, "Mario Rossi", "Presentazione Esempio 1", null, null);
+            //if (res == DynamicCaptureResult.DynCaptOK)
+            //{
+            //    print("signature captured successfully");
+            //    SigObj sigObj = (SigObj)sigCtl.Signature;
+            //    sigObj.set_ExtraData("AdditionalData", "C# test: Additional data");
 
-                string inputPath = @"C:\Users\visio\Desktop\PDF_ManipulationTests\LoremIpsumMulti.pdf";
-                //string inputPath = @"C:\Users\visio\Desktop\PDF_ManipulationTests\LoremIpsumEmpthy.pdf";
-                //string inputPath = @"C:\Users\visio\Desktop\PDF_ManipulationTests\LoremIpsumRight.pdf";
-                //string inputPath = @"C:\Users\visio\Desktop\PDF_ManipulationTests\LoremIpsumLeft.pdf";
-                string imgPath = signTargetPath;
-                string outputPath = @"C:\Users\visio\Desktop\PDF_ManipulationTests\Result.pdf";
+            //    //var testRead = sigObj.ExtraData["AdditionalData"]; // Works
 
-                int signTargetPage = -1;
+            //    String dateStr = DateTime.Now.ToString("hhmmss");
 
-                Dictionary<int, List<Vector>> markerPositions = new Dictionary<int, List<Vector>>();
+            //    string folderPath = @"C:\temp";
+            //    if (!Directory.Exists(folderPath))
+            //    {
+            //        Directory.CreateDirectory(folderPath);
+            //    }
 
-                using (PdfPig.PdfDocument document = PdfPig.PdfDocument.Open(inputPath))
-                {
-                    foreach (var page in document.GetPages())
-                    {
-                        foreach (var word in page.GetWords())
-                        {
-                            if (word.Text.Contains(marker))
-                            {
-                                signTargetPage = page.Number;
+            //    signTargetPath = @"C:\Users\visio\Desktop\PDF_ManipulationTests\Signs\" + dateStr + ".png";
+            //    print("Outputting to file " + signTargetPath);
+            //    try
+            //    {
+            //        //print("Saving signature to file " + filename);
+            //        // Need to understand if DimensionX and DimensionY alter the image metadata. These values (200, 150) were already here in the example.
+            //        sigObj.RenderBitmap(signTargetPath, 150, 100, "image/png", 0.5f, 0xff0000, 0xffffff, 10.0f, 10.0f, RBFlags.RenderOutputFilename | RBFlags.RenderColor32BPP | RBFlags.RenderEncodeData);
 
-                                if (markerPositions.ContainsKey(signTargetPage))
-                                {
-                                    markerPositions[signTargetPage].Add(new Vector(word.BoundingBox.Left, word.BoundingBox.Top));
-                                }
-                                else
-                                {
-                                    markerPositions.Add(signTargetPage, new List<Vector> { new Vector(word.BoundingBox.Left, word.BoundingBox.Top) });
-                                }
-                            }
-                        }
-                    }
+            //        print("Loading image from " + signTargetPath);
+            //        BitmapImage src = new BitmapImage();
+            //        src.BeginInit();
+            //        src.UriSource = new Uri(signTargetPath, UriKind.Absolute);
+            //        src.EndInit();
 
-                    // PDFPig counts from page 1.
-                    HashSet<int> invalidKeys = new HashSet<int>();
-                    foreach (KeyValuePair<int, List<Vector>> pair in markerPositions)
-                    {
-                        if (pair.Key <= 0 || pair.Key > document.NumberOfPages)
-                        {
-                            invalidKeys.Add(pair.Key);
-                        }
-                    }
+            //        imgSig.Source = src;
+            //    }
+            //    catch (Exception ex)
+            //    {
+            //        MessageBox.Show(ex.Message);
+            //    }
 
-                    foreach(int invKey in invalidKeys)
-                    {
-                        if (markerPositions.ContainsKey(invKey))
-                        {
-                            markerPositions.Remove(invKey);
-                        }
-                    }
+            //}
+            //else
+            //{
 
-                }
-
-                using (PdfSharp.Pdf.PdfDocument pdf = PdfSharp.Pdf.IO.PdfReader.Open(inputPath, PdfDocumentOpenMode.Modify))
-                {
-
-                    // Need to add all null checks. Even if we're inside Try.
-                    foreach (KeyValuePair<int, List<Vector>> pair in markerPositions)
-                    {
-                        PdfSharp.Pdf.PdfPage pageToSign = pdf.Pages[pair.Key - 1];
-
-                        PdfSharp.Drawing.XGraphics gfx = PdfSharp.Drawing.XGraphics.FromPdfPage(pageToSign);
-                        PdfSharp.Drawing.XImage signatureImage = PdfSharp.Drawing.XImage.FromFile(signTargetPath);
-
-                        // PdfPig counts Y from top, PDFsharp from bottom.
-                        // X uses same coordinates.
-                        foreach(Vector markerInstance in pair.Value)
-                        {
-                            double posX = markerInstance.X;
-                            double posY = pageToSign.Height.Point - markerInstance.Y - signatureImage.PixelHeight * 0.5f;
-
-                            gfx.DrawImage(signatureImage, posX, posY, signatureImage.PixelWidth, signatureImage.PixelHeight);
-                        }
-                    }
-
-                    // Encryption.
-                    pdf.SecurityHandler.SetEncryptionToV2With128Bits(); // Different alghoritms are available.
-                    pdf.SecuritySettings.UserPassword = "1234";
-                    pdf.SecuritySettings.OwnerPassword = "Admin";
-
-                    // No permit.
-                    pdf.SecuritySettings.PermitModifyDocument = false;
-                    pdf.SecuritySettings.PermitAssembleDocument = false;
-                    pdf.SecuritySettings.PermitFormsFill = false;
-                    pdf.SecuritySettings.PermitAnnotations = false;
-
-                    // Permit.
-                    pdf.SecuritySettings.PermitExtractContent = true;
-                    pdf.SecuritySettings.PermitPrint = true;
-                    pdf.SecuritySettings.PermitFullQualityPrint = true;
-
-                    pdf.Save(outputPath);
-
-                    // ATTENTION: Wacom SignatureMiniscope cannot open encrypted files. Also, copy-paste of biomethric signature does not work (it works on the real Wacoom SignatureScope full version).
-                    // It does not work even when creating a pdf from world copy-pasting an image in it.
-                    // A .png intead could be loaded, so in theory we can save both pdf (encrypted) and the sign's png in a protected ZIP. The use MiniScope on the png inside given necessary password.
-                    // https://developer-support.wacom.com/hc/en-us/articles/9354488252311-How-do-I-copy-paste-a-signature-from-sign-pro-PDF-into-another-Wacom-application
-
-                    // !!! PdfSharp supports signature: Check complete documentation https://docs.pdfsharp.net/PDFsharp/Overview/About.html !!!
-                    // Maybe an authorized Sign with certificate is really needed to provide legal value:https://github.com/empira/PDFsharp/tree/master/src/foundation/src/PDFsharp/src/PdfSharp.Cryptography
-                    // PDFSharp.Cryptography needs .NET v6.0
-                }
+            //    // IF WACOM STU IS NOT ATTACHED: Returns message that license is invalid!
+            //    print("Signature capture error res=" + (int)res + "  ( " + res + " )");
+            //    switch (res)
+            //    {
+            //        case DynamicCaptureResult.DynCaptCancel: print("signature cancelled"); break;
+            //        case DynamicCaptureResult.DynCaptError: print("no capture service available"); break;
+            //        case DynamicCaptureResult.DynCaptPadError: print("signing device error"); break;
+            //        case DynamicCaptureResult.DynCaptNotLicensed: print("license error or device is not connected"); break;
+            //        default: print("Unexpected error code "); break;
+            //    }
+            //}
 
 
+            //if (!File.Exists(signTargetPath))
+            //{
+            //    return;
+            //}
 
-                #region No more used iTextSharp (incompatible license)
+            //try
+            //{
 
-                //PdfReader reader = new PdfReader(@"C:\Users\visio\Desktop\LoremIpsumRight.pdf");
-                ////PdfReader reader = new PdfReader(@"C:\Users\visio\Desktop\LoremIpsumLeft.pdf");
-                //using (FileStream fs = new FileStream(@"C:\Users\visio\Desktop\Result.pdf", FileMode.Create))
-                //using (PdfStamper stamper = new PdfStamper(reader, fs))
-                //{
-                //    int pageNum = 1;
+            //    // All these vars need to be managed through MVC.
+            //    string marker = "{{{SIGN_HERE}}}";
 
-                //    var strategy = new TextLocationStrategyChar(marker);
-                //    var processor = new PdfContentStreamProcessor(strategy);
+            //    string inputPath = @"C:\Users\visio\Desktop\PDF_ManipulationTests\LoremIpsumMulti.pdf";
+            //    //string inputPath = @"C:\Users\visio\Desktop\PDF_ManipulationTests\LoremIpsumEmpthy.pdf";
+            //    //string inputPath = @"C:\Users\visio\Desktop\PDF_ManipulationTests\LoremIpsumRight.pdf";
+            //    //string inputPath = @"C:\Users\visio\Desktop\PDF_ManipulationTests\LoremIpsumLeft.pdf";
+            //    string imgPath = signTargetPath;
+            //    string outputPath = @"C:\Users\visio\Desktop\PDF_ManipulationTests\Result.pdf";
 
-                //    var pageDic = reader.GetPageN(pageNum);
-                //    var resourcesDic = pageDic.GetAsDict(PdfName.RESOURCES);
-                //    processor.ProcessContent(ContentByteUtils.GetContentBytesForPage(reader, pageNum), resourcesDic);
+            //    int signTargetPage = -1;
 
-                //    strategy.FinalizeSearch();
+            //    Dictionary<int, List<Vector>> markerPositions = new Dictionary<int, List<Vector>>();
 
-                //    if (strategy.MarkerPositions.Count > 0)
-                //    {
-                //        PdfContentByte canvas = stamper.GetOverContent(pageNum);
-                //        iTextSharp.text.Image img = iTextSharp.text.Image.GetInstance(signTargetPath);
+            //    using (PdfPig.PdfDocument document = PdfPig.PdfDocument.Open(inputPath))
+            //    {
+            //        foreach (var page in document.GetPages())
+            //        {
+            //            foreach (var word in page.GetWords())
+            //            {
+            //                if (word.Text.Contains(marker))
+            //                {
+            //                    signTargetPage = page.Number;
 
-                //        foreach (var pos in strategy.MarkerPositions)
-                //        {
-                //            // Move of half height and width (it depends on marker position found) to center the image (high left corner) on the marker.
-                //            // To check X we consider an offset of 70% of the PDF itself.
-                //            // Values are kinda hadcoded for now, and they depend on the size of the sign canvas.
-                //            float resultAbsX = pos[Vector.I1] - img.Width * 0.25f;
-                //            float resultAbsY = pos[Vector.I2] - img.Height * 0.5f;
+            //                    if (markerPositions.ContainsKey(signTargetPage))
+            //                    {
+            //                        markerPositions[signTargetPage].Add(new Vector(word.BoundingBox.Left, word.BoundingBox.Top));
+            //                    }
+            //                    else
+            //                    {
+            //                        markerPositions.Add(signTargetPage, new List<Vector> { new Vector(word.BoundingBox.Left, word.BoundingBox.Top) });
+            //                    }
+            //                }
+            //            }
+            //        }
 
-                //            if (pos[Vector.I1] > reader.GetPageSize(pageNum).Width * 0.7f)
-                //            {
-                //                resultAbsX = pos[Vector.I1] - img.Width * 0.5f;
-                //            }
+            //        // PDFPig counts from page 1.
+            //        HashSet<int> invalidKeys = new HashSet<int>();
+            //        foreach (KeyValuePair<int, List<Vector>> pair in markerPositions)
+            //        {
+            //            if (pair.Key <= 0 || pair.Key > document.NumberOfPages)
+            //            {
+            //                invalidKeys.Add(pair.Key);
+            //            }
+            //        }
 
-                //            img.SetAbsolutePosition(resultAbsX, resultAbsY);
-                //            canvas.AddImage(img);
-                //        }
-                //    }
-                //    else
-                //    {
-                //        Console.WriteLine("Marker non trovato");
-                //    }
-                //}
+            //        foreach(int invKey in invalidKeys)
+            //        {
+            //            if (markerPositions.ContainsKey(invKey))
+            //            {
+            //                markerPositions.Remove(invKey);
+            //            }
+            //        }
 
-                #endregion
+            //    }
+
+            //    using (PdfSharp.Pdf.PdfDocument pdf = PdfSharp.Pdf.IO.PdfReader.Open(inputPath, PdfDocumentOpenMode.Modify))
+            //    {
+
+            //        // Need to add all null checks. Even if we're inside Try.
+            //        foreach (KeyValuePair<int, List<Vector>> pair in markerPositions)
+            //        {
+            //            PdfSharp.Pdf.PdfPage pageToSign = pdf.Pages[pair.Key - 1];
+
+            //            PdfSharp.Drawing.XGraphics gfx = PdfSharp.Drawing.XGraphics.FromPdfPage(pageToSign);
+            //            PdfSharp.Drawing.XImage signatureImage = PdfSharp.Drawing.XImage.FromFile(signTargetPath);
+
+            //            // PdfPig counts Y from top, PDFsharp from bottom.
+            //            // X uses same coordinates.
+            //            foreach(Vector markerInstance in pair.Value)
+            //            {
+            //                double posX = markerInstance.X;
+            //                double posY = pageToSign.Height.Point - markerInstance.Y - signatureImage.PixelHeight * 0.5f;
+
+            //                gfx.DrawImage(signatureImage, posX, posY, signatureImage.PixelWidth, signatureImage.PixelHeight);
+            //            }
+            //        }
+
+            //        // Encryption.
+            //        pdf.SecurityHandler.SetEncryptionToV2With128Bits(); // Different alghoritms are available.
+            //        pdf.SecuritySettings.UserPassword = "1234";
+            //        pdf.SecuritySettings.OwnerPassword = "Admin";
+
+            //        // No permit.
+            //        pdf.SecuritySettings.PermitModifyDocument = false;
+            //        pdf.SecuritySettings.PermitAssembleDocument = false;
+            //        pdf.SecuritySettings.PermitFormsFill = false;
+            //        pdf.SecuritySettings.PermitAnnotations = false;
+
+            //        // Permit.
+            //        pdf.SecuritySettings.PermitExtractContent = true;
+            //        pdf.SecuritySettings.PermitPrint = true;
+            //        pdf.SecuritySettings.PermitFullQualityPrint = true;
+
+            //        pdf.Save(outputPath);
+
+            //        // ATTENTION: Wacom SignatureMiniscope cannot open encrypted files. Also, copy-paste of biomethric signature does not work (it works on the real Wacoom SignatureScope full version).
+            //        // It does not work even when creating a pdf from world copy-pasting an image in it.
+            //        // A .png intead could be loaded, so in theory we can save both pdf (encrypted) and the sign's png in a protected ZIP. The use MiniScope on the png inside given necessary password.
+            //        // https://developer-support.wacom.com/hc/en-us/articles/9354488252311-How-do-I-copy-paste-a-signature-from-sign-pro-PDF-into-another-Wacom-application
+
+            //        // !!! PdfSharp supports signature: Check complete documentation https://docs.pdfsharp.net/PDFsharp/Overview/About.html !!!
+            //        // Maybe an authorized Sign with certificate is really needed to provide legal value:https://github.com/empira/PDFsharp/tree/master/src/foundation/src/PDFsharp/src/PdfSharp.Cryptography
+            //        // PDFSharp.Cryptography needs .NET v6.0
+            //    }
+            //}
+            //catch
+            //{
+            //    Console.WriteLine();
+            //}
 
 
+            #endregion
 
-            }
-            catch
-            {
-                Console.WriteLine();
-            }
+
+            #region No more used iTextSharp (incompatible license)
+
+            //    //PdfReader reader = new PdfReader(@"C:\Users\visio\Desktop\LoremIpsumRight.pdf");
+            //    ////PdfReader reader = new PdfReader(@"C:\Users\visio\Desktop\LoremIpsumLeft.pdf");
+            //    //using (FileStream fs = new FileStream(@"C:\Users\visio\Desktop\Result.pdf", FileMode.Create))
+            //    //using (PdfStamper stamper = new PdfStamper(reader, fs))
+            //    //{
+            //    //    int pageNum = 1;
+
+            //    //    var strategy = new TextLocationStrategyChar(marker);
+            //    //    var processor = new PdfContentStreamProcessor(strategy);
+
+            //    //    var pageDic = reader.GetPageN(pageNum);
+            //    //    var resourcesDic = pageDic.GetAsDict(PdfName.RESOURCES);
+            //    //    processor.ProcessContent(ContentByteUtils.GetContentBytesForPage(reader, pageNum), resourcesDic);
+
+            //    //    strategy.FinalizeSearch();
+
+            //    //    if (strategy.MarkerPositions.Count > 0)
+            //    //    {
+            //    //        PdfContentByte canvas = stamper.GetOverContent(pageNum);
+            //    //        iTextSharp.text.Image img = iTextSharp.text.Image.GetInstance(signTargetPath);
+
+            //    //        foreach (var pos in strategy.MarkerPositions)
+            //    //        {
+            //    //            // Move of half height and width (it depends on marker position found) to center the image (high left corner) on the marker.
+            //    //            // To check X we consider an offset of 70% of the PDF itself.
+            //    //            // Values are kinda hadcoded for now, and they depend on the size of the sign canvas.
+            //    //            float resultAbsX = pos[Vector.I1] - img.Width * 0.25f;
+            //    //            float resultAbsY = pos[Vector.I2] - img.Height * 0.5f;
+
+            //    //            if (pos[Vector.I1] > reader.GetPageSize(pageNum).Width * 0.7f)
+            //    //            {
+            //    //                resultAbsX = pos[Vector.I1] - img.Width * 0.5f;
+            //    //            }
+
+            //    //            img.SetAbsolutePosition(resultAbsX, resultAbsY);
+            //    //            canvas.AddImage(img);
+            //    //        }
+            //    //    }
+            //    //    else
+            //    //    {
+            //    //        Console.WriteLine("Marker non trovato");
+            //    //    }
+            //    //}
+
+            #endregion
 
 
 
@@ -288,19 +293,19 @@ namespace TestSigCapt_WPF
 
             #region Wacom SignPro pdf API call tests (premium license is needed)
 
-            //// Invocazione di Wacom SignPRO API. Richiede licenza premium.
-            //// Leggi il contenuto del file JSON
-            //string jsonPath = @"C:\Users\visio\Downloads\api-demo-v4\scripts\API Command Demo\demo api autosave.txt";
-            //string json = File.ReadAllText(jsonPath);
+            // Invocazione di Wacom SignPRO API. Richiede licenza premium.
+            // Leggi il contenuto del file JSON
+            string jsonPath = @"C:\Users\visio\Downloads\Wacom\api-demo-v4\scripts\API Command Demo\demo api autosave.txt";
+            string json = File.ReadAllText(jsonPath);
 
-            //// Converti in Base64
-            //string base64 = Convert.ToBase64String(Encoding.UTF8.GetBytes(json));
+            // Converti in Base64
+            string base64 = Convert.ToBase64String(Encoding.UTF8.GetBytes(json));
 
-            //// Esegui Sign Pro PDF con il parametro API
-            //Process.Start(
-            //    @"C:\Program Files (x86)\Wacom sign pro PDF\Sign Pro PDF.exe",
-            //    $"-api signpro:{base64}"
-            //);
+            // Esegui Sign Pro PDF con il parametro API
+            Process.Start(
+                @"C:\Program Files (x86)\Wacom sign pro PDF\Sign Pro PDF.exe",
+                $"-api signpro:{base64}"
+            );
 
             #endregion
 
