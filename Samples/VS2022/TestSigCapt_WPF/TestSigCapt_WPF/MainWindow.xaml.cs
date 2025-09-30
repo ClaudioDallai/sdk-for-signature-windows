@@ -299,6 +299,7 @@ namespace TestSigCapt_WPF
 
 
                 // To Multi-Sign, we need an incremental-sign-method. Using temp pdf (maybe not necessary but it is advised)
+                // Multi-Sign is a difficult topic. In theory a digital Sign validated the entire doc. Maybe an approach "png - png - ... - Legal Sign" could be tested (?)
                 string signedFilePath = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "signed_working_copy.pdf");
                 int iterator = 0;
 
