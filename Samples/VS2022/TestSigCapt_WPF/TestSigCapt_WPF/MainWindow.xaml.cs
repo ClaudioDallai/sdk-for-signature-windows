@@ -357,6 +357,8 @@ namespace TestSigCapt_WPF
                             // Any kind of Certificationlevel must be specified in the first sign (PDF standard)
                             // While CERTIFIED_NO_CHANGES_ALLOWED exists and it is the safest, it invalidates multi-signs
                             // Using CERTIFIED_FORM_FILLING instead, allows for different signature slots, still protecting from unwanted changes
+                            // Because other signatures, done in other applications are allowed (even if they miss the specific certificate and so they're marked as suspicious),
+                            // another try is to let the pdf be immutable AFTER all our signs are done
                             if (iterator == 0)
                             {
                                 appearance.CertificationLevel = PdfSignatureAppearance.CERTIFIED_FORM_FILLING;
