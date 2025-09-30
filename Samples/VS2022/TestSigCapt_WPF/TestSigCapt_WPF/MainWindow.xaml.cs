@@ -259,127 +259,137 @@ namespace TestSigCapt_WPF
             string reason = "Firma di prova";
             string location = "Italia";
 
-            // Load the certificate with BouncyCastle from .pfx file
-            Pkcs12Store pk12;
-            using (var fs = new FileStream(pfxPath, FileMode.Open, FileAccess.Read))
+            try
             {
-                // Use builder to create the store (deprecated factory. CTOR in iText will do)
-                pk12 = new Pkcs12StoreBuilder().Build();
-                pk12.Load(fs, pfxPassword.ToCharArray());
-            }
 
-            // Find the alias that corresponds to a private key entry in the certificate
-            string alias = null;
-            foreach (string tAlias in pk12.Aliases)
-            {
-                if (pk12.IsKeyEntry(tAlias))
+                // Load the certificate with BouncyCastle from .pfx file
+                Pkcs12Store pk12;
+                using (var fs = new FileStream(pfxPath, FileMode.Open, FileAccess.Read))
                 {
-                    alias = tAlias;
-                    break;
+                    // Use builder to create the store (deprecated factory. CTOR in iText will do)
+                    pk12 = new Pkcs12StoreBuilder().Build();
+                    pk12.Load(fs, pfxPassword.ToCharArray());
                 }
-            }
 
-            // Get private key and chain of authentication entities
-            var pk = pk12.GetKey(alias).Key;
-            var chain = pk12.GetCertificateChain(alias);
-
-            // Create an iTextSharp compatible chain of authentication entities (literally a cast-like)
-            ICollection<Org.BouncyCastle.X509.X509Certificate> chainBC = new List<Org.BouncyCastle.X509.X509Certificate>();
-            foreach (var entry in chain)
-            {
-                chainBC.Add(entry.Certificate);
-            }
-
-            // Create the external signature object, specifying the private key and hashing algorithm(SHA-256)
-            IExternalSignature externalSignature = new PrivateKeySignature(pk, "SHA-256");
-
-
-            // To Multi-Sign, we need an incremental-sign-method. Using temp pdf (maybe not necessary but it is advised)
-            string signedFilePath = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "signed_working_copy.pdf");
-            int iterator = 0;
-
-            // Start by copying pdf to the starting file
-            File.Copy(inputPdf, signedFilePath, true);
-
-            // Cycle all markers in every page
-            foreach (var page in markerPositions)
-            {
-                foreach (var markerFound in page.Value)
+                // Find the alias that corresponds to a private key entry in the certificate
+                string alias = null;
+                foreach (string tAlias in pk12.Aliases)
                 {
-                    // Read PDF as bytes to not cause UnauthorizedAccessException because file is already used by FileStream
-                    byte[] pdfBytes = File.ReadAllBytes(signedFilePath);
-                    iTextSharp.text.pdf.PdfReader reader = new iTextSharp.text.pdf.PdfReader(pdfBytes);
-
-                    // Open the file.
-                    using (FileStream os = new FileStream(signedFilePath, FileMode.Open, FileAccess.ReadWrite))
+                    if (pk12.IsKeyEntry(tAlias))
                     {
-                        // Stamper in Append mode (not FileStream!!!) does not invalidate the PDF
-                        // Stamper from iTextSharp is used to create a Signature
-                        // Being in append mode, and a legally-sign, PDF modify functions are already kinda disabled
-                        PdfStamper stamper = PdfStamper.CreateSignature(reader, os, '\0', null, true);
-
-                        // Setup signature slot extension (kinda hardcoded)
-                        float rectWidth = 225f;
-                        float rectHeight = 75f;
-                        var pageSize = reader.GetPageSize(page.Key);
-                        float pageWidth = pageSize.Width;
-                        float offset = (markerFound.X > pageWidth / 2) ? 100f : 10f;
-                        float rectX = (float)markerFound.X - offset;
-                        float rectY = (float)markerFound.Y - 85f;
-
-                        // Configure signature appearance properties (reason, location, visible signature rectangle, etc.)
-                        PdfSignatureAppearance appearance = stamper.SignatureAppearance;
-                        appearance.Reason = reason;
-                        appearance.Location = location;
-
-                        // Add a visible signature slot. Names of different signatures (fieldName MUST be different). Name of the metadata inside the signature itself can be the same instead
-                        appearance.SetVisibleSignature(new iTextSharp.text.Rectangle(rectX, rectY, rectX + rectWidth, rectY + rectHeight), page.Key, $"Signature_{iterator}");
-
-
-                        // This explicitly manage permissions on the PDF result:
-                        //public const int NOT_CERTIFIED = 0;
-                        //public const int CERTIFIED_NO_CHANGES_ALLOWED = 1;
-                        //public const int CERTIFIED_FORM_FILLING = 2;
-                        //public const int CERTIFIED_FORM_FILLING_AND_ANNOTATIONS = 3;
-
-                        // Any kind of Certificationlevel must be specified in the first sign (PDF standard)
-                        // While CERTIFIED_NO_CHANGES_ALLOWED exists and it is the safest, it invalidates multi-signs
-                        // Using CERTIFIED_FORM_FILLING instead, allows for different signature slots, still protecting from unwanted changes
-                        if (iterator == 0)
-                        {
-                            appearance.CertificationLevel = PdfSignatureAppearance.CERTIFIED_FORM_FILLING;
-                        }
-                        else
-                        {
-                            appearance.CertificationLevel = PdfSignatureAppearance.NOT_CERTIFIED;
-                        }
-
-                        // Appearance object actually needs a PNG to take the image from. We use the one that was taken using Wacom INK SDK
-                        // In theory, we can call here Wacom INK SDK to get signature (better and legally-valid method)
-                        if (File.Exists(signTargetPath))
-                        {
-                            var signatureImg = iTextSharp.text.Image.GetInstance(signTargetPath);
-                            appearance.SignatureGraphic = signatureImg;
-                            appearance.SignatureRenderingMode = PdfSignatureAppearance.RenderingMode.GRAPHIC_AND_DESCRIPTION;
-                        }
-
-                        // Apply the sign
-                        MakeSignature.SignDetached(appearance, externalSignature, chainBC, null, null, null, 0, CryptoStandard.CADES);
+                        alias = tAlias;
+                        break;
                     }
-
-                    iterator++;
                 }
+
+                // Get private key and chain of authentication entities
+                var pk = pk12.GetKey(alias).Key;
+                var chain = pk12.GetCertificateChain(alias);
+
+                // Create an iTextSharp compatible chain of authentication entities (literally a cast-like)
+                ICollection<Org.BouncyCastle.X509.X509Certificate> chainBC = new List<Org.BouncyCastle.X509.X509Certificate>();
+                foreach (var entry in chain)
+                {
+                    chainBC.Add(entry.Certificate);
+                }
+
+                // Create the external signature object, specifying the private key and hashing algorithm(SHA-256)
+                IExternalSignature externalSignature = new PrivateKeySignature(pk, "SHA-256");
+
+
+
+                // To Multi-Sign, we need an incremental-sign-method. Using temp pdf (maybe not necessary but it is advised)
+                string signedFilePath = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "signed_working_copy.pdf");
+                int iterator = 0;
+
+                // Start by copying pdf to the starting file
+                File.Copy(inputPdf, signedFilePath, true);
+
+                // Cycle all markers in every page
+                foreach (var page in markerPositions)
+                {
+                    foreach (var markerFound in page.Value)
+                    {
+                        // Read PDF as bytes to not cause UnauthorizedAccessException because file is already used by FileStream
+                        byte[] pdfBytes = File.ReadAllBytes(signedFilePath);
+                        iTextSharp.text.pdf.PdfReader reader = new iTextSharp.text.pdf.PdfReader(pdfBytes);
+
+                        // Open the file.
+                        using (FileStream os = new FileStream(signedFilePath, FileMode.Open, FileAccess.ReadWrite))
+                        {
+                            // Stamper in Append mode (not FileStream!!!) does not invalidate the PDF
+                            // Stamper from iTextSharp is used to create a Signature
+                            // Being in append mode, and a legally-sign, PDF modify functions are already kinda disabled
+                            PdfStamper stamper = PdfStamper.CreateSignature(reader, os, '\0', null, true);
+
+                            // Setup signature slot extension (kinda hardcoded)
+                            float rectWidth = 225f;
+                            float rectHeight = 75f;
+                            var pageSize = reader.GetPageSize(page.Key);
+                            float pageWidth = pageSize.Width;
+                            float offset = (markerFound.X > pageWidth / 2) ? 100f : 10f;
+                            float rectX = (float)markerFound.X - offset;
+                            float rectY = (float)markerFound.Y - 85f;
+
+                            // Configure signature appearance properties (reason, location, visible signature rectangle, etc.)
+                            PdfSignatureAppearance appearance = stamper.SignatureAppearance;
+                            appearance.Reason = reason;
+                            appearance.Location = location;
+
+                            // Add a visible signature slot. Names of different signatures (fieldName MUST be different). Name of the metadata inside the signature itself can be the same instead
+                            appearance.SetVisibleSignature(new iTextSharp.text.Rectangle(rectX, rectY, rectX + rectWidth, rectY + rectHeight), page.Key, $"Signature_{iterator}");
+
+
+                            // This explicitly manage permissions on the PDF result:
+                            //public const int NOT_CERTIFIED = 0;
+                            //public const int CERTIFIED_NO_CHANGES_ALLOWED = 1;
+                            //public const int CERTIFIED_FORM_FILLING = 2;
+                            //public const int CERTIFIED_FORM_FILLING_AND_ANNOTATIONS = 3;
+
+                            // Any kind of Certificationlevel must be specified in the first sign (PDF standard)
+                            // While CERTIFIED_NO_CHANGES_ALLOWED exists and it is the safest, it invalidates multi-signs
+                            // Using CERTIFIED_FORM_FILLING instead, allows for different signature slots, still protecting from unwanted changes
+                            if (iterator == 0)
+                            {
+                                appearance.CertificationLevel = PdfSignatureAppearance.CERTIFIED_FORM_FILLING;
+                            }
+                            else
+                            {
+                                appearance.CertificationLevel = PdfSignatureAppearance.NOT_CERTIFIED;
+                            }
+
+                            // Appearance object actually needs a PNG to take the image from. We use the one that was taken using Wacom INK SDK
+                            // In theory, we can call here Wacom INK SDK to get signature (better and legally-valid method)
+                            if (File.Exists(signTargetPath))
+                            {
+                                var signatureImg = iTextSharp.text.Image.GetInstance(signTargetPath);
+                                appearance.SignatureGraphic = signatureImg;
+                                appearance.SignatureRenderingMode = PdfSignatureAppearance.RenderingMode.GRAPHIC_AND_DESCRIPTION;
+                            }
+
+                            // Apply the sign
+                            MakeSignature.SignDetached(appearance, externalSignature, chainBC, null, null, null, 0, CryptoStandard.CADES);
+                        }
+
+                        iterator++;
+                    }
+                }
+
+                // Copy temp file inside output path
+                File.Copy(signedFilePath, outputPdf, true);
+
+                if (File.Exists(signedFilePath))
+                {
+                    File.Delete(signedFilePath);
+                }
+
+                Console.WriteLine("PDF was signed!");
             }
-
-            // Copy temp file inside output path
-            File.Copy(signedFilePath, outputPdf, true);
-
-            if (File.Exists(signedFilePath))
+            catch
             {
-                File.Delete(signedFilePath);
+                Console.WriteLine();
             }
 
-            Console.WriteLine("PDF was signed!");
 
 
             #endregion iTextSharp Signature cryptho (deprecated, use iText instead under licensing)
