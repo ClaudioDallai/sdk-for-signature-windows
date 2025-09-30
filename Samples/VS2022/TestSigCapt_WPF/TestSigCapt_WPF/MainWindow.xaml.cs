@@ -12,6 +12,7 @@
 // Wacom Ink sdk
 using FlSigCaptLib;
 using FLSIGCTLLib;
+using iTextSharp.text;
 using iTextSharp.text.pdf;
 using iTextSharp.text.pdf.parser;
 using iTextSharp.text.pdf.security;
@@ -41,6 +42,7 @@ using System.Windows.Input;
 using System.Windows.Media.Imaging;
 // PDF manipulation
 using PdfPig = UglyToad.PdfPig;
+
 
 
 namespace TestSigCapt_WPF
@@ -124,72 +126,68 @@ namespace TestSigCapt_WPF
                 }
             }
 
+            string inputPdf = @"C:\Users\visio\Desktop\PDF_ManipulationTests\LoremIpsumMulti.pdf";
+            string outputPdf = @"C:\Users\visio\Desktop\PDF_ManipulationTests\Result.pdf";
+            string marker = "{{{SIGN_HERE}}}";
+
 
             #region MIT Libraries
 
-            //if (!File.Exists(signTargetPath))
-            //{
-            //    return;
-            //}
 
-            //try
-            //{
+            #region PdfPig
 
-            //    // All these vars need to be managed through MVC.
-            //    string marker = "{{{SIGN_HERE}}}";
 
-            //    string inputPath = @"C:\Users\visio\Desktop\PDF_ManipulationTests\LoremIpsumMulti.pdf";
-            //    //string inputPath = @"C:\Users\visio\Desktop\PDF_ManipulationTests\LoremIpsumEmpthy.pdf";
-            //    //string inputPath = @"C:\Users\visio\Desktop\PDF_ManipulationTests\LoremIpsumRight.pdf";
-            //    //string inputPath = @"C:\Users\visio\Desktop\PDF_ManipulationTests\LoremIpsumLeft.pdf";
-            //    string imgPath = signTargetPath;
-            //    string outputPath = @"C:\Users\visio\Desktop\PDF_ManipulationTests\Result.pdf";
+            // Use PdfPig to interrogate the PDF and rtreive infos about sign slot locations
+            int signTargetPage = -1;
 
-            //    int signTargetPage = -1;
+            Dictionary<int, List<System.Windows.Vector>> markerPositions = new Dictionary<int, List<System.Windows.Vector>>();
 
-            //    Dictionary<int, List<Vector>> markerPositions = new Dictionary<int, List<Vector>>();
+            using (PdfPig.PdfDocument document = PdfPig.PdfDocument.Open(inputPdf))
+            {
+                foreach (var page in document.GetPages())
+                {
+                    foreach (var word in page.GetWords())
+                    {
+                        if (word.Text.Contains(marker))
+                        {
+                            signTargetPage = page.Number;
 
-            //    using (PdfPig.PdfDocument document = PdfPig.PdfDocument.Open(inputPath))
-            //    {
-            //        foreach (var page in document.GetPages())
-            //        {
-            //            foreach (var word in page.GetWords())
-            //            {
-            //                if (word.Text.Contains(marker))
-            //                {
-            //                    signTargetPage = page.Number;
+                            if (markerPositions.ContainsKey(signTargetPage))
+                            {
+                                markerPositions[signTargetPage].Add(new System.Windows.Vector(word.BoundingBox.Left, word.BoundingBox.Top));
+                            }
+                            else
+                            {
+                                markerPositions.Add(signTargetPage, new List<System.Windows.Vector> { new System.Windows.Vector(word.BoundingBox.Left, word.BoundingBox.Top) });
+                            }
+                        }
+                    }
+                }
 
-            //                    if (markerPositions.ContainsKey(signTargetPage))
-            //                    {
-            //                        markerPositions[signTargetPage].Add(new Vector(word.BoundingBox.Left, word.BoundingBox.Top));
-            //                    }
-            //                    else
-            //                    {
-            //                        markerPositions.Add(signTargetPage, new List<Vector> { new Vector(word.BoundingBox.Left, word.BoundingBox.Top) });
-            //                    }
-            //                }
-            //            }
-            //        }
+                // PDFPig counts from page 1.
+                HashSet<int> invalidKeys = new HashSet<int>();
+                foreach (KeyValuePair<int, List<System.Windows.Vector>> pair in markerPositions)
+                {
+                    if (pair.Key <= 0 || pair.Key > document.NumberOfPages)
+                    {
+                        invalidKeys.Add(pair.Key);
+                    }
+                }
 
-            //        // PDFPig counts from page 1.
-            //        HashSet<int> invalidKeys = new HashSet<int>();
-            //        foreach (KeyValuePair<int, List<Vector>> pair in markerPositions)
-            //        {
-            //            if (pair.Key <= 0 || pair.Key > document.NumberOfPages)
-            //            {
-            //                invalidKeys.Add(pair.Key);
-            //            }
-            //        }
+                foreach (int invKey in invalidKeys)
+                {
+                    if (markerPositions.ContainsKey(invKey))
+                    {
+                        markerPositions.Remove(invKey);
+                    }
+                }
+            }
 
-            //        foreach(int invKey in invalidKeys)
-            //        {
-            //            if (markerPositions.ContainsKey(invKey))
-            //            {
-            //                markerPositions.Remove(invKey);
-            //            }
-            //        }
 
-            //    }
+            #endregion
+
+
+            #region PDFSharp
 
             //    using (PdfSharp.Pdf.PdfDocument pdf = PdfSharp.Pdf.IO.PdfReader.Open(inputPath, PdfDocumentOpenMode.Modify))
             //    {
@@ -246,6 +244,8 @@ namespace TestSigCapt_WPF
             //    Console.WriteLine();
             //}
 
+            #endregion
+
 
             #endregion
 
@@ -253,8 +253,7 @@ namespace TestSigCapt_WPF
             #region iTextSharp
 
 
-            string inputPdf = @"C:\Users\visio\Desktop\PDF_ManipulationTests\LoremIpsumRight.pdf";
-            string outputPdf = @"C:\Users\visio\Desktop\PDF_ManipulationTests\Result.pdf";
+            // Hardoded as example
             string pfxPath = @"C:\temp\firma-demo.pfx";
             string pfxPassword = "password123";
             string reason = "Firma di prova";
@@ -264,7 +263,7 @@ namespace TestSigCapt_WPF
             Pkcs12Store pk12;
             using (var fs = new FileStream(pfxPath, FileMode.Open, FileAccess.Read))
             {
-                // Usa il builder per creare lo store
+                // Use builder to create the store (deprecated factory. CTOR in iText will do)
                 pk12 = new Pkcs12StoreBuilder().Build();
                 pk12.Load(fs, pfxPassword.ToCharArray());
             }
@@ -288,49 +287,99 @@ namespace TestSigCapt_WPF
             ICollection<Org.BouncyCastle.X509.X509Certificate> chainBC = new List<Org.BouncyCastle.X509.X509Certificate>();
             foreach (var entry in chain)
             {
-                chainBC.Add(entry.Certificate); // tipo BouncyCastle
+                chainBC.Add(entry.Certificate);
             }
 
             // Create the external signature object, specifying the private key and hashing algorithm(SHA-256)
             IExternalSignature externalSignature = new PrivateKeySignature(pk, "SHA-256");
 
-            // Read the original PDF
-            iTextSharp.text.pdf.PdfReader reader = new iTextSharp.text.pdf.PdfReader(inputPdf);
-            using (FileStream os = new FileStream(outputPdf, FileMode.Create))
+
+            // To Multi-Sign, we need an incremental-sign-method. Using temp pdf (maybe not necessary but it is advised)
+            string signedFilePath = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "signed_working_copy.pdf");
+            int iterator = 0;
+
+            // Start by copying pdf to the starting file
+            File.Copy(inputPdf, signedFilePath, true);
+
+            // Cycle all markers in every page
+            foreach (var page in markerPositions)
             {
-                // Stamper in Append mode (not FileStream!!!) does not invalidate the PDF
-                // Stamper from iTextSharp is used to create a Signature
-                // Being in append mode, and a legally-sign, PDF modify functions are already kinda disabled
-                PdfStamper stamper = PdfStamper.CreateSignature(reader, os, '\0', null, true);
-
-                // Configure signature appearance properties (reason, location, visible signature rectangle, etc.)
-                PdfSignatureAppearance appearance = stamper.SignatureAppearance;
-                appearance.Reason = reason;
-                appearance.Location = location;
-                appearance.SetVisibleSignature(new iTextSharp.text.Rectangle(100, 100, 300, 150), 1, "Signature1");
-
-                // This explicitly manage permissions on the PDF result:
-                //public const int NOT_CERTIFIED = 0;
-                //public const int CERTIFIED_NO_CHANGES_ALLOWED = 1;
-                //public const int CERTIFIED_FORM_FILLING = 2;
-                //public const int CERTIFIED_FORM_FILLING_AND_ANNOTATIONS = 3;
-                appearance.CertificationLevel = PdfSignatureAppearance.CERTIFIED_NO_CHANGES_ALLOWED;
-
-
-                // Appearance object actually needs a PNG to take the image from. We use the one that was taken using Wacom INK SDK
-                if (File.Exists(signTargetPath))
+                foreach (var markerFound in page.Value)
                 {
-                    var signatureImg = iTextSharp.text.Image.GetInstance(signTargetPath);
-                    appearance.SignatureGraphic = signatureImg;
-                    appearance.SignatureRenderingMode = PdfSignatureAppearance.RenderingMode.GRAPHIC_AND_DESCRIPTION;
-                }
+                    // Read PDF as bytes to not cause UnauthorizedAccessException because file is already used by FileStream
+                    byte[] pdfBytes = File.ReadAllBytes(signedFilePath);
+                    iTextSharp.text.pdf.PdfReader reader = new iTextSharp.text.pdf.PdfReader(pdfBytes);
 
-                // Apply the sign
-                MakeSignature.SignDetached(appearance, externalSignature, chainBC, null, null, null, 0, CryptoStandard.CADES);
+                    // Open the file.
+                    using (FileStream os = new FileStream(signedFilePath, FileMode.Open, FileAccess.ReadWrite))
+                    {
+                        // Stamper in Append mode (not FileStream!!!) does not invalidate the PDF
+                        // Stamper from iTextSharp is used to create a Signature
+                        // Being in append mode, and a legally-sign, PDF modify functions are already kinda disabled
+                        PdfStamper stamper = PdfStamper.CreateSignature(reader, os, '\0', null, true);
+
+                        // Setup signature slot position and extension
+                        float rectWidth = 225f;
+                        float rectHeight = 75f;
+                        var pageSize = reader.GetPageSize(page.Key);
+                        float pageWidth = pageSize.Width;
+                        float offset = (markerFound.X > pageWidth / 2) ? 100f : 10f;
+                        float rectX = (float)markerFound.X - offset;
+                        float rectY = (float)markerFound.Y - 85f;
+
+                        // Configure signature appearance properties (reason, location, visible signature rectangle, etc.)
+                        PdfSignatureAppearance appearance = stamper.SignatureAppearance;
+                        appearance.Reason = reason;
+                        appearance.Location = location;
+
+                        // Add a visible signature slot. Names of different signatures (fieldName MUST be different). Name of the metadata inside the signature itself can be the same instead
+                        appearance.SetVisibleSignature(new iTextSharp.text.Rectangle(rectX, rectY, rectX + rectWidth, rectY + rectHeight), page.Key, $"Signature_{iterator}");
+
+
+                        // This explicitly manage permissions on the PDF result:
+                        //public const int NOT_CERTIFIED = 0;
+                        //public const int CERTIFIED_NO_CHANGES_ALLOWED = 1;
+                        //public const int CERTIFIED_FORM_FILLING = 2;
+                        //public const int CERTIFIED_FORM_FILLING_AND_ANNOTATIONS = 3;
+
+                        // Any kind of Certificationlevel must be specified in the first sign (PDF standard)
+                        // While CERTIFIED_NO_CHANGES_ALLOWED exists and it is the safest, it invalidates multi-signs
+                        // Using CERTIFIED_FORM_FILLING instead, allows for different signature slots, still protecting from unwanted changes
+                        if (iterator == 0)
+                        {
+                            appearance.CertificationLevel = PdfSignatureAppearance.CERTIFIED_FORM_FILLING;
+                        }
+                        else
+                        {
+                            appearance.CertificationLevel = PdfSignatureAppearance.NOT_CERTIFIED;
+                        }
+
+                        // Appearance object actually needs a PNG to take the image from. We use the one that was taken using Wacom INK SDK
+                        // In theory, we can call here Wacom INK SDK to get signature (better and legally-valid method)
+                        if (File.Exists(signTargetPath))
+                        {
+                            var signatureImg = iTextSharp.text.Image.GetInstance(signTargetPath);
+                            appearance.SignatureGraphic = signatureImg;
+                            appearance.SignatureRenderingMode = PdfSignatureAppearance.RenderingMode.GRAPHIC_AND_DESCRIPTION;
+                        }
+
+                        // Apply the sign
+                        MakeSignature.SignDetached(appearance, externalSignature, chainBC, null, null, null, 0, CryptoStandard.CADES);
+                    }
+
+                    iterator++;
+                }
             }
 
-            Console.WriteLine("PDF firmato con successo!");
+            // Copy temp file inside output path
+            File.Copy(signedFilePath, outputPdf, true);
 
+            if (File.Exists(signedFilePath))
+            {
+                File.Delete(signedFilePath);
+            }
+
+            Console.WriteLine("PDF was signed!");
 
 
             #endregion iTextSharp Signature cryptho (deprecated, use iText instead under licensing)
