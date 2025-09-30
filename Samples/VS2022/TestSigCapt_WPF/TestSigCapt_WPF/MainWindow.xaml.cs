@@ -58,19 +58,8 @@ namespace TestSigCapt_WPF
             InitializeComponent();
         }
 
-        private void btnSign_Click(object sender, RoutedEventArgs e)
+        public void ActivateWacom(SigCtl sigCtl, ref string signTargetPath)
         {
-
-
-            #region Signature INK sdk and PDF Manipulation
-
-
-            String signTargetPath = "";
-
-            print("btnSign was pressed");
-            SigCtl sigCtl = new SigCtl();
-            sigCtl.Licence = _sdkLicenseKey;
-            //DynamicCapture dc = new DynamicCaptureClass();
             DynamicCapture dc = new FlSigCaptLib.DynamicCapture();
             DynamicCaptureResult res = dc.Capture(sigCtl, "Mario Rossi", "Presentazione Esempio 1", null, null);
             if (res == DynamicCaptureResult.DynCaptOK)
@@ -125,6 +114,24 @@ namespace TestSigCapt_WPF
                     default: print("Unexpected error code "); break;
                 }
             }
+        }
+
+        private void btnSign_Click(object sender, RoutedEventArgs e)
+        {
+
+
+            #region Signature INK sdk and PDF Manipulation
+
+
+            String signTargetPath = "";
+
+            print("btnSign was pressed");
+            SigCtl sigCtl = new SigCtl();
+            sigCtl.Licence = _sdkLicenseKey;
+            //DynamicCapture dc = new DynamicCaptureClass();
+
+
+           
 
             string inputPdf = @"C:\Users\visio\Desktop\PDF_ManipulationTests\LoremIpsumMulti.pdf";
             string outputPdf = @"C:\Users\visio\Desktop\PDF_ManipulationTests\Result.pdf";
@@ -360,7 +367,8 @@ namespace TestSigCapt_WPF
                             }
 
                             // Appearance object actually needs a PNG to take the image from. We use the one that was taken using Wacom INK SDK
-                            // In theory, we can call here Wacom INK SDK to get signature (better and legally-valid method)
+                            // In theory, we can call here Wacom INK SDK to get signature (better and legally-valid method). An example is using ActivateWacom custom method
+                            ActivateWacom(sigCtl, ref signTargetPath);
                             if (File.Exists(signTargetPath))
                             {
                                 var signatureImg = iTextSharp.text.Image.GetInstance(signTargetPath);
