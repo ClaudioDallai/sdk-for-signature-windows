@@ -318,7 +318,7 @@ namespace TestSigCapt_WPF
                         // Being in append mode, and a legally-sign, PDF modify functions are already kinda disabled
                         PdfStamper stamper = PdfStamper.CreateSignature(reader, os, '\0', null, true);
 
-                        // Setup signature slot position and extension
+                        // Setup signature slot extension (kinda hardcoded)
                         float rectWidth = 225f;
                         float rectHeight = 75f;
                         var pageSize = reader.GetPageSize(page.Key);
