@@ -304,6 +304,7 @@ namespace TestSigCapt_WPF
                 IExternalSignature externalSignature = new PrivateKeySignature(pk, "SHA-256");
 
 
+                string processedPdf = ProcessPDF(inputPdf);
 
                 // To Multi-Sign, we need an incremental-sign-method. Using temp pdf (maybe not necessary but it is advised)
                 // Multi-Sign is a difficult topic. In theory a digital Sign validated the entire doc. Maybe an approach "png - png - ... - Legal Sign" could be tested (?)
@@ -311,7 +312,7 @@ namespace TestSigCapt_WPF
                 int iterator = 0;
 
                 // Start by copying pdf to the starting file
-                File.Copy(inputPdf, signedFilePath, true);
+                File.Copy(processedPdf, signedFilePath, true);
 
                 // Cycle all markers in every page
                 foreach (var page in markerPositions)
@@ -320,7 +321,7 @@ namespace TestSigCapt_WPF
                     {
                         // Read PDF as bytes to not cause UnauthorizedAccessException because file is already used by FileStream
                         byte[] pdfBytes = File.ReadAllBytes(signedFilePath);
-                        iTextSharp.text.pdf.PdfReader reader = new iTextSharp.text.pdf.PdfReader(pdfBytes);
+                        iTextSharp.text.pdf.PdfReader reader = new iTextSharp.text.pdf.PdfReader(pdfBytes, Encoding.ASCII.GetBytes("Admin"));
 
                         // Open the file.
                         using (FileStream os = new FileStream(signedFilePath, FileMode.Open, FileAccess.ReadWrite))
@@ -441,6 +442,35 @@ namespace TestSigCapt_WPF
             txtInfo.Text += txt + "\r\n";
         }
 
+        private string ProcessPDF(string src)
+        {
+            string preProcessedPath = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "pdf_with_permissions.pdf");
+
+            using (iTextSharp.text.pdf.PdfReader reader = new iTextSharp.text.pdf.PdfReader(src))
+            using (FileStream fs = new FileStream(preProcessedPath, FileMode.Create))
+            {
+                PdfStamper stamper = new PdfStamper(reader, fs);
+
+                // Set encryption and permissions
+                string userPassword = "test"; // No password to open
+                string ownerPassword = "Admin"; // Needed to change permissions
+
+                int permissions =
+                    PdfWriter.ALLOW_PRINTING |
+                    PdfWriter.ALLOW_FILL_IN;
+
+                stamper.SetEncryption(
+                    Encoding.ASCII.GetBytes(userPassword),
+                    Encoding.ASCII.GetBytes(ownerPassword),
+                    permissions,
+                    PdfWriter.ENCRYPTION_AES_128
+                );
+
+                stamper.Close();
+            }
+
+            return preProcessedPath;
+        }
 
     }
 }
