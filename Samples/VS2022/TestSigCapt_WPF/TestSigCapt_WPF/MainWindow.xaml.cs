@@ -363,11 +363,7 @@ namespace TestSigCapt_WPF
                             {
                                 appearance.CertificationLevel = PdfSignatureAppearance.CERTIFIED_FORM_FILLING;
                             }
-                            else
-                            {
-                                appearance.CertificationLevel = PdfSignatureAppearance.NOT_CERTIFIED;
-                            }
-
+                           
                             // Appearance object actually needs a PNG to take the image from. We use the one that was taken using Wacom INK SDK
                             // In theory, we can call here Wacom INK SDK to get signature (better and legally-valid method). An example is using ActivateWacom custom method
                             ActivateWacom(sigCtl, ref signTargetPath);
