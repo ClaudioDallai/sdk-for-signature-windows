@@ -544,6 +544,7 @@ namespace TestSigCapt_WPF
                 // Set encryption and permissions
                 string ownerPassword = "Admin"; // Needed to change permissions
 
+                // Permissions MUST be compatible to the certification level of the PDF
                 int permissions =
                     PdfWriter.ALLOW_PRINTING |
                     PdfWriter.ALLOW_FILL_IN;
