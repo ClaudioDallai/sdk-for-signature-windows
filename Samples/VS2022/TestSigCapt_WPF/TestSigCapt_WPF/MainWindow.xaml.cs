@@ -131,7 +131,7 @@ namespace TestSigCapt_WPF
             //DynamicCapture dc = new DynamicCaptureClass();
 
 
-           
+
 
             string inputPdf = @"C:\Users\visio\Desktop\PDF_ManipulationTests\LoremIpsumMulti.pdf";
             string outputPdf = @"C:\Users\visio\Desktop\PDF_ManipulationTests\Result.pdf";
@@ -261,47 +261,118 @@ namespace TestSigCapt_WPF
 
 
             // Hardoded as example
-            string pfxPath = @"C:\temp\firma-demo.pfx";
-            string pfxPassword = "password123";
+
+            // Not necessary if using Windows Certificate Store
+            //string pfxPath = @"C:\temp\firma-demo.pfx"; 
+            //string pfxPassword = "password123";
+
             string reason = "Firma di prova";
             string location = "Italia";
+
+
+            // Certificate subject name
+            string subjectName = "FirmaDemo";
+
+            // Open current user store
+            var store = new System.Security.Cryptography.X509Certificates.X509Store(
+                    System.Security.Cryptography.X509Certificates.StoreName.My,
+                    System.Security.Cryptography.X509Certificates.StoreLocation.CurrentUser);
+
+            store.Open(System.Security.Cryptography.X509Certificates.OpenFlags.ReadOnly);
+
+
+            // Cerca certificati con il subject indicato (anche quelli scaduti con validOnly:false)
+            var certs = store.Certificates.Find(
+                System.Security.Cryptography.X509Certificates.X509FindType.FindBySubjectName,
+                subjectName,
+                validOnly: false);
+
+            if (certs.Count == 0)
+                throw new System.Exception($"Certificato con subject '{subjectName}' non trovato.");
+
+            // Prendi il primo certificato trovato
+            var cert = certs[0];
+
+
+            // I campi NotBefore e NotAfter nei certificati sono sempre espressi in UTC secondo lo standard X.509
+            DateTime now = DateTime.UtcNow;
+            if (now > cert.NotAfter.ToUniversalTime())
+            {
+                throw new System.Exception($"Certificato con subject '{subjectName}' scaduto.");
+            }
+
+            if (!cert.HasPrivateKey)
+                throw new System.Exception("Il certificato non contiene la chiave privata.");
+
+            // Converte il certificato .NET in BouncyCastle X509Certificate
+            var parser = new Org.BouncyCastle.X509.X509CertificateParser();
+            Org.BouncyCastle.X509.X509Certificate bcCert = parser.ReadCertificate(cert.RawData);
+
+            // Estrai la chiave privata RSA da .NET e convertila in BouncyCastle.
+            // La chiave RSA è una particolare implementazione di questa coppia di chiavi (RSA è uno degli algoritmi più usati).
+            Org.BouncyCastle.Crypto.AsymmetricKeyParameter bcPrivateKey;
+
+            using (var rsa = cert.GetRSAPrivateKey())
+            {
+                if (rsa == null)
+                    throw new System.Exception("Impossibile ottenere la chiave RSA privata.");
+
+                bcPrivateKey = Org.BouncyCastle.Security.DotNetUtilities.GetRsaKeyPair(rsa).Private;
+            }
+
+            // Crea la chain BouncyCastle (qui metto solo il certificato principale, aggiungi intermedi se vuoi)
+            System.Collections.Generic.IList<Org.BouncyCastle.X509.X509Certificate> chainBC = new System.Collections.Generic.List<Org.BouncyCastle.X509.X509Certificate> { bcCert };
+
+            IExternalSignature externalSignature = new PrivateKeySignature(bcPrivateKey, "SHA-256");
+
+            System.Console.WriteLine("Certificato caricato correttamente e pronto per firmare.");
+
+
+            // Now we can sign using externalSignature (certificated) and chainBC
+
 
             try
             {
 
-                // Load the certificate with BouncyCastle from .pfx file
-                Pkcs12Store pk12;
-                using (var fs = new FileStream(pfxPath, FileMode.Open, FileAccess.Read))
-                {
-                    // Use builder to create the store (deprecated factory. CTOR in iText will do)
-                    pk12 = new Pkcs12StoreBuilder().Build();
-                    pk12.Load(fs, pfxPassword.ToCharArray());
-                }
+                #region Load pfx directly from file (not really ok)
 
-                // Find the alias that corresponds to a private key entry in the certificate
-                string alias = null;
-                foreach (string tAlias in pk12.Aliases)
-                {
-                    if (pk12.IsKeyEntry(tAlias))
-                    {
-                        alias = tAlias;
-                        break;
-                    }
-                }
 
-                // Get private key and chain of authentication entities
-                var pk = pk12.GetKey(alias).Key;
-                var chain = pk12.GetCertificateChain(alias);
+                //// Load the certificate with BouncyCastle from .pfx file
+                //Pkcs12Store pk12;
+                //using (var fs = new FileStream(pfxPath, FileMode.Open, FileAccess.Read))
+                //{
+                //    // Use builder to create the store (deprecated factory. CTOR in iText will do)
+                //    pk12 = new Pkcs12StoreBuilder().Build();
+                //    pk12.Load(fs, pfxPassword.ToCharArray());
+                //}
 
-                // Create an iTextSharp compatible chain of authentication entities (literally a cast-like)
-                ICollection<Org.BouncyCastle.X509.X509Certificate> chainBC = new List<Org.BouncyCastle.X509.X509Certificate>();
-                foreach (var entry in chain)
-                {
-                    chainBC.Add(entry.Certificate);
-                }
+                //// Find the alias that corresponds to a private key entry in the certificate
+                //string alias = null;
+                //foreach (string tAlias in pk12.Aliases)
+                //{
+                //    if (pk12.IsKeyEntry(tAlias))
+                //    {
+                //        alias = tAlias;
+                //        break;
+                //    }
+                //}
 
-                // Create the external signature object, specifying the private key and hashing algorithm(SHA-256)
-                IExternalSignature externalSignature = new PrivateKeySignature(pk, "SHA-256");
+                //// Get private key and chain of authentication entities
+                //var pk = pk12.GetKey(alias).Key;
+                //var chain = pk12.GetCertificateChain(alias);
+
+                //// Create an iTextSharp compatible chain of authentication entities (literally a cast-like)
+                //ICollection<Org.BouncyCastle.X509.X509Certificate> chainBC = new List<Org.BouncyCastle.X509.X509Certificate>();
+                //foreach (var entry in chain)
+                //{
+                //    chainBC.Add(entry.Certificate);
+                //}
+
+                //// Create the external signature object, specifying the private key and hashing algorithm(SHA-256)
+                //IExternalSignature externalSignature = new PrivateKeySignature(pk, "SHA-256");
+
+
+                #endregion
 
 
                 string processedPdf = ProcessPDF(inputPdf);
@@ -364,7 +435,7 @@ namespace TestSigCapt_WPF
                             {
                                 appearance.CertificationLevel = PdfSignatureAppearance.CERTIFIED_FORM_FILLING;
                             }
-                           
+
                             // Appearance object actually needs a PNG to take the image from. We use the one that was taken using Wacom INK SDK
                             // In theory, we can call here Wacom INK SDK to get signature (better and legally-valid method). An example is using ActivateWacom custom method
                             ActivateWacom(sigCtl, ref signTargetPath);
@@ -396,6 +467,10 @@ namespace TestSigCapt_WPF
             catch
             {
                 Console.WriteLine();
+            }
+            finally
+            {
+                store.Close();
             }
 
 
