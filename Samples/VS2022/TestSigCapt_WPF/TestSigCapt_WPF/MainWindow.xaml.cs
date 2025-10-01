@@ -291,6 +291,7 @@ namespace TestSigCapt_WPF
                 throw new System.Exception($"Certificato con subject '{subjectName}' non trovato.");
 
             // Prendi il primo certificato trovato
+            // ATTENZIONE: In caso di certificati con lo stesso nome, con magari alcuni scaduti, ne va preso uno valido.
             var cert = certs[0];
 
 
@@ -304,9 +305,6 @@ namespace TestSigCapt_WPF
             if (!cert.HasPrivateKey)
                 throw new System.Exception("Il certificato non contiene la chiave privata.");
 
-            // Converte il certificato .NET in BouncyCastle X509Certificate
-            var parser = new Org.BouncyCastle.X509.X509CertificateParser();
-            Org.BouncyCastle.X509.X509Certificate bcCert = parser.ReadCertificate(cert.RawData);
 
             // Estrai la chiave privata RSA da .NET e convertila in BouncyCastle.
             // La chiave RSA è una particolare implementazione di questa coppia di chiavi (RSA è uno degli algoritmi più usati).
@@ -320,8 +318,25 @@ namespace TestSigCapt_WPF
                 bcPrivateKey = Org.BouncyCastle.Security.DotNetUtilities.GetRsaKeyPair(rsa).Private;
             }
 
-            // Crea la chain BouncyCastle (qui metto solo il certificato principale, aggiungi intermedi se vuoi)
-            System.Collections.Generic.IList<Org.BouncyCastle.X509.X509Certificate> chainBC = new System.Collections.Generic.List<Org.BouncyCastle.X509.X509Certificate> { bcCert };
+            // Costruisci la catena completa (leaf + intermedi)
+            var chain = new System.Security.Cryptography.X509Certificates.X509Chain();
+            // Opzionale: includi CA root se vuoi
+
+            // Qua sto costruendo la chain, non voglio verificare le firme. il servizio di controllo è HTTP. Molto spesso viene così disattivato, ed usato su applicazioni esterne solo per controllo validità
+            // Disabilita quindi controllo CRL/OCSP
+            chain.ChainPolicy.RevocationMode = System.Security.Cryptography.X509Certificates.X509RevocationMode.NoCheck; 
+            chain.Build(cert);
+
+            // Converte tutta la chain in BouncyCastle
+            var parser = new Org.BouncyCastle.X509.X509CertificateParser();
+            var chainBC = new List<Org.BouncyCastle.X509.X509Certificate>();
+
+            foreach (var element in chain.ChainElements)
+            {
+                var bc = parser.ReadCertificate(element.Certificate.RawData);
+                chainBC.Add(bc);
+            }
+
 
             IExternalSignature externalSignature = new PrivateKeySignature(bcPrivateKey, "SHA-256");
 
@@ -527,7 +542,6 @@ namespace TestSigCapt_WPF
                 PdfStamper stamper = new PdfStamper(reader, fs);
 
                 // Set encryption and permissions
-                string userPassword = "test"; // No password to open
                 string ownerPassword = "Admin"; // Needed to change permissions
 
                 int permissions =
@@ -535,7 +549,7 @@ namespace TestSigCapt_WPF
                     PdfWriter.ALLOW_FILL_IN;
 
                 stamper.SetEncryption(
-                    Encoding.ASCII.GetBytes(userPassword),
+                    new byte[0],
                     Encoding.ASCII.GetBytes(ownerPassword),
                     permissions,
                     PdfWriter.ENCRYPTION_AES_128
