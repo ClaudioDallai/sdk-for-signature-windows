@@ -9,6 +9,12 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 
+using PdfSharp.Pdf;
+//using PdfSharp.Cryptography;
+using System.Security.Cryptography.Pkcs;   // from NuGet
+using System.Security.Cryptography.X509Certificates;
+
+
 namespace TestPDFSharpSignatures
 {
     /// <summary>

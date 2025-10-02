@@ -8,4 +8,9 @@
     <UseWPF>true</UseWPF>
   </PropertyGroup>
 
+  <ItemGroup>
+    <PackageReference Include="PDFsharp" Version="6.2.2" />
+    <PackageReference Include="System.Security.Cryptography.Pkcs" Version="9.0.9" />
+  </ItemGroup>
+
 </Project>
