@@ -46,23 +46,6 @@ namespace TestPDFSharpSignatures
 
             InitializeComponent();
 
-            //var document = PdfReader.Open("file.pdf", "password");
-            //PdfPage page = document.AddPage();
-            //XGraphics gfx = XGraphics.FromPdfPage(page);
-
-            //var pdfPosition = gfx.Transformer.WorldToDefaultPage(new XPoint(144, 600));
-            //var options = new DigitalSignatureOptions
-            //{
-            //    ContactInfo = "John Doe",
-            //    Location = "Seattle",
-            //    Reason = "License Agreement",
-            //    Rectangle = new XRect(pdfPosition.X, pdfPosition.Y, 200, 50),
-            //    //AppearanceHandler = new SignatureAppearanceHandler()
-            //};
-
-
-
-
             String signTargetPath = "";
 
             //print("btnSign was pressed");
@@ -70,12 +53,14 @@ namespace TestPDFSharpSignatures
             sigCtl.Licence = _sdkLicenseKey;
             //DynamicCapture dc = new DynamicCaptureClass();
 
-            string inputPdf = @"C:\Users\visio\Desktop\PDF_ManipulationTests\LoremIpsumRight.pdf";
+            string inputPdf = @"C:\Users\visio\Desktop\PDF_ManipulationTests\LoremIpsumMulti.pdf";
             string outputPdf = @"C:\Users\visio\Desktop\PDF_ManipulationTests\ResultPDFSharp.pdf";
             string marker = "{{{SIGN_HERE}}}";
 
+            string reason = "Firma di prova";
+            string location = "Italia";
 
-            // Get signature requested positions in every page
+            // Get signature requested positions in every page. Using PDFSharp works only for a single signature.
             #region PdfPig
 
 
@@ -153,9 +138,6 @@ namespace TestPDFSharpSignatures
             //string pfxPath = @"C:\temp\firma-demo.pfx"; 
             //string pfxPassword = "password123";
 
-            string reason = "Firma di prova";
-            string location = "Italia";
-
 
             // Certificate subject name
             string subjectName = "FirmaDemo";
@@ -215,11 +197,29 @@ namespace TestPDFSharpSignatures
             };
 
             PdfDocument document = PdfReader.Open(inputPdf, PdfDocumentOpenMode.Modify);
+
+            // Different alghoritms are available. This one is required to work on Edge PDF Viewer (Microsoft issue)
+            document.SecurityHandler.SetEncryption(PdfDefaultEncryption.V2With128Bits); 
+
+            document.SecurityHandler.OwnerPassword = "Admin";
+            //document.SecurityHandler.UserPassword = "";
+
+            document.SecuritySettings.PermitPrint = true;
+            document.SecuritySettings.PermitFullQualityPrint = true;
+            document.SecuritySettings.PermitExtractContent = true;
+
+            document.SecuritySettings.PermitAssembleDocument = false;
+            document.SecuritySettings.PermitModifyDocument = false;
+            document.SecuritySettings.PermitFormsFill = false;
+            document.SecuritySettings.PermitAnnotations = false;
+
+
             var pdfSignatureHandler = DigitalSignatureHandler.ForDocument(document, new BouncyCastleSigner((cert, chainCerts), PdfMessageDigestType.SHA256), options);
             document.Save(outputPdf);
-
             //document.Close(); Save already do this
 
+            store.Close();
+            Application.Current.Shutdown();
         }
 
         public void ActivateWacom(SigCtl sigCtl, ref string signTargetPath)
@@ -279,16 +279,6 @@ namespace TestPDFSharpSignatures
 
                 }
             }
-        }
-
-        [Obsolete("Need to find a way to add security levels to this pdf")]
-        private string ProcessPDF(string src)
-        {
-            string preProcessedPath = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "pdf_with_permissions.pdf");
-
-
-
-            return preProcessedPath;
         }
     }
 }
