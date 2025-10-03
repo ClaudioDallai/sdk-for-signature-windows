@@ -4,6 +4,7 @@ using PdfSharp.Drawing.Layout;
 using PdfSharp.Pdf.Annotations;
 using PdfSharp.Quality;
 using System.Globalization;
+using System.IO;
 using System.Web;
 using System.Windows;
 
@@ -27,6 +28,8 @@ namespace TestPDFSharpSignatures
 
         public void DrawAppearance(XGraphics gfx, XRect rect)
         {
+            if (!Path.Exists(_imagePath)) return;
+
             var image = XImage.FromFile(_imagePath);
 
             string text = $"{_signer}\n{_place}, " + DateTime.Now.ToString(CultureInfo.GetCultureInfo("EN-US"));
