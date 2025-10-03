@@ -185,7 +185,7 @@ namespace TestPDFSharpSignatures
                 ContactInfo = "Mario Rossi",
                 Location = location,
                 Reason = reason,
-                Rectangle = new XRect(markerPositions[1][0].X, markerPositions[1][0].Y, 200, 100),
+                Rectangle = new XRect(markerPositions[1][0].X, markerPositions[1][0].Y - 100, 150, 100),
                 AppearanceHandler = new SignatureAppearanceHandler(signTargetPath, "Mario Rossi", location, "Arial")
             };
 
@@ -223,7 +223,7 @@ namespace TestPDFSharpSignatures
                 {
                     //print("Saving signature to file " + filename);
                     // Need to understand if DimensionX and DimensionY alter the image metadata. These values (200, 150) were already here in the example.
-                    sigObj.RenderBitmap(signTargetPath, 150, 100, "image/png", 0.5f, 0xff0000, 0xffffff, 10.0f, 10.0f, RBFlags.RenderOutputFilename | RBFlags.RenderColor32BPP | RBFlags.RenderEncodeData);
+                    sigObj.RenderBitmap(signTargetPath, 200, 150, "image/png", 0.5f, 0xff0000, 0xffffff, 10.0f, 10.0f, RBFlags.RenderOutputFilename | RBFlags.RenderColor32BPP | RBFlags.RenderEncodeData);
 
                     //print("Loading image from " + signTargetPath);
                     BitmapImage src = new BitmapImage();
