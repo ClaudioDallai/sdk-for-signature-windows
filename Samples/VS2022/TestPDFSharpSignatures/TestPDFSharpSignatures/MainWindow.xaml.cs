@@ -1,12 +1,19 @@
 ﻿// Wacom Ink sdk
 using FlSigCaptLib;
 using FLSIGCTLLib;
+using Org.BouncyCastle.Crypto;
+using Org.BouncyCastle.Crypto.Parameters;
+using Org.BouncyCastle.Pkcs;
+using Org.BouncyCastle.Security;
+using Org.BouncyCastle.X509;
 using PdfSharp.Drawing;
 using PdfSharp.Fonts;
 using PdfSharp.Pdf;
+using PdfSharp.Pdf.AcroForms;
 using PdfSharp.Pdf.IO;
 using PdfSharp.Pdf.Security;
 using PdfSharp.Pdf.Signatures;
+using PdfSharp.Snippets.Pdf;
 using System.IO;
 using System.Reflection.Metadata;
 using System.Security.Cryptography.Pkcs;
@@ -21,14 +28,9 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
-
-using Org.BouncyCastle.X509;
-using Org.BouncyCastle.Crypto;
-using Org.BouncyCastle.Crypto.Parameters;
-using Org.BouncyCastle.Pkcs;
-using Org.BouncyCastle.Security;
-using PdfSharp.Snippets.Pdf;
-
+using UglyToad.PdfPig.AcroForms;
+using UglyToad.PdfPig.AcroForms.Fields;
+using UglyToad.PdfPig.Content;
 
 
 /*
@@ -63,8 +65,8 @@ namespace TestPDFSharpSignatures
             sigCtl.Licence = _sdkLicenseKey;
             //DynamicCapture dc = new DynamicCaptureClass();
 
-            string inputPdf = @"C:\Users\visio\Desktop\PDF_ManipulationTests\LoremIpsumMulti.pdf";
-            string outputPdf = @"C:\Users\visio\Desktop\PDF_ManipulationTests\ResultPDFSharp.pdf";
+            string inputPdf = @"C:\Users\visio\Desktop\PDF_ManipulationTests\LoremIpsumLeft.pdf";
+            string outputPdf = @"C:\Users\visio\Desktop\PDF_ManipulationTests\ResultPDFSharpForms.pdf";
 
             string marker_sign = "{{{SIGN_HERE}}}";
             string marker_name = "{{{NAME_HERE}}}";
@@ -79,62 +81,81 @@ namespace TestPDFSharpSignatures
             #region PdfPig
 
 
-            // Use PdfPig to interrogate the PDF and rtreive infos about sign slot locations
-            int signTargetPage = -1;
+            //// Use PdfPig to interrogate the PDF and rtreive infos about sign slot locations
+            //int signTargetPage = -1;
 
             Dictionary<int, List<System.Windows.Vector>> markerPositions = new Dictionary<int, List<System.Windows.Vector>>();
 
+            //using (UglyToad.PdfPig.PdfDocument documentPig = UglyToad.PdfPig.PdfDocument.Open(inputPdf))
+            //{
+            //    foreach (var page in documentPig.GetPages())
+            //    {
+            //        foreach (var word in page.GetWords())
+            //        {
+            //            if (word.Text.Contains(marker_sign))
+            //            {
+            //                signTargetPage = page.Number;
+
+            //                if (markerPositions.ContainsKey(signTargetPage))
+            //                {
+            //                    if (word.BoundingBox.Left > page.Width * 0.5)
+            //                    {
+            //                        markerPositions[signTargetPage].Add(new System.Windows.Vector(word.BoundingBox.Left - 25, word.BoundingBox.Top));
+            //                    }
+            //                    else
+            //                    {
+            //                        markerPositions[signTargetPage].Add(new System.Windows.Vector(word.BoundingBox.Left, word.BoundingBox.Top));
+            //                    }
+            //                }
+            //                else
+            //                {
+            //                    if (word.BoundingBox.Left > page.Width * 0.5)
+            //                    {
+            //                        markerPositions.Add(signTargetPage, new List<System.Windows.Vector> { new System.Windows.Vector(word.BoundingBox.Left - 25, word.BoundingBox.Top) });
+            //                    }
+            //                    else
+            //                    {
+            //                        markerPositions.Add(signTargetPage, new List<System.Windows.Vector> { new System.Windows.Vector(word.BoundingBox.Left, word.BoundingBox.Top) });
+            //                    }
+            //                }
+            //            }
+            //        }
+            //    }
+
+            //    // PDFPig counts from page 1.
+            //    HashSet<int> invalidKeys = new HashSet<int>();
+            //    foreach (KeyValuePair<int, List<System.Windows.Vector>> pair in markerPositions)
+            //    {
+            //        if (pair.Key <= 0 || pair.Key > documentPig.NumberOfPages)
+            //        {
+            //            invalidKeys.Add(pair.Key);
+            //        }
+            //    }
+
+            //    foreach (int invKey in invalidKeys)
+            //    {
+            //        if (markerPositions.ContainsKey(invKey))
+            //        {
+            //            markerPositions.Remove(invKey);
+            //        }
+            //    }
+            //}
+
             using (UglyToad.PdfPig.PdfDocument documentPig = UglyToad.PdfPig.PdfDocument.Open(inputPdf))
             {
-                foreach (var page in documentPig.GetPages())
+                documentPig.TryGetForm(out var form);
+                if (form == null)
                 {
-                    foreach (var word in page.GetWords())
-                    {
-                        if (word.Text.Contains(marker_sign))
-                        {
-                            signTargetPage = page.Number;
-
-                            if (markerPositions.ContainsKey(signTargetPage))
-                            {
-                                if (word.BoundingBox.Left > page.Width * 0.5)
-                                {
-                                    markerPositions[signTargetPage].Add(new System.Windows.Vector(word.BoundingBox.Left - 25, word.BoundingBox.Top));
-                                }
-                                else
-                                {
-                                    markerPositions[signTargetPage].Add(new System.Windows.Vector(word.BoundingBox.Left, word.BoundingBox.Top));
-                                }
-                            }
-                            else
-                            {
-                                if (word.BoundingBox.Left > page.Width * 0.5)
-                                {
-                                    markerPositions.Add(signTargetPage, new List<System.Windows.Vector> { new System.Windows.Vector(word.BoundingBox.Left - 25, word.BoundingBox.Top) });
-                                }
-                                else
-                                {
-                                    markerPositions.Add(signTargetPage, new List<System.Windows.Vector> { new System.Windows.Vector(word.BoundingBox.Left, word.BoundingBox.Top) });
-                                }
-                            }
-                        }
-                    }
+                    Console.WriteLine("Nessun AcroForm trovato.");
+                    return;
                 }
 
-                // PDFPig counts from page 1.
-                HashSet<int> invalidKeys = new HashSet<int>();
-                foreach (KeyValuePair<int, List<System.Windows.Vector>> pair in markerPositions)
+                foreach (var field in form.Fields)
                 {
-                    if (pair.Key <= 0 || pair.Key > documentPig.NumberOfPages)
+                    if (field.Information.PartialName == "Text2")
                     {
-                        invalidKeys.Add(pair.Key);
-                    }
-                }
 
-                foreach (int invKey in invalidKeys)
-                {
-                    if (markerPositions.ContainsKey(invKey))
-                    {
-                        markerPositions.Remove(invKey);
+                        markerPositions.Add(field.PageNumber.Value, new List<System.Windows.Vector> { new System.Windows.Vector(field.Bounds.Value.Left, field.Bounds.Value.Right - 50d) });
                     }
                 }
             }
@@ -200,6 +221,25 @@ namespace TestPDFSharpSignatures
             #endregion
 
 
+            PdfDocument document = PdfReader.Open(inputPdf, PdfDocumentOpenMode.Modify);
+
+
+            // TODO: Undersant forms
+            //PdfAcroForm formfield = document.AcroForm;
+
+            //if (formfield.Elements.ContainsKey("/NeedAppearances"))
+            //{
+            //    formfield.Elements["/NeedAppearances"] = new PdfSharp.Pdf.PdfBoolean(true);
+            //}
+            //else
+            //{
+            //    formfield.Elements.Add("/NeedAppearances", new PdfSharp.Pdf.PdfBoolean(true));
+            //}
+
+            //PdfTextField testField = (PdfTextField)(formfield.Fields["Text1"]);
+            //testField.Text = signer;
+
+
             ActivateWacom(sigCtl, ref signTargetPath);
             var options = new DigitalSignatureOptions
             {
@@ -210,10 +250,9 @@ namespace TestPDFSharpSignatures
                 AppearanceHandler = new SignatureAppearanceHandler(signTargetPath, signer, location, _font)
             };
 
-            PdfDocument document = PdfReader.Open(inputPdf, PdfDocumentOpenMode.Modify);
 
             // Different alghoritms are available. This one is required to work on Edge PDF Viewer (Microsoft issue)
-            document.SecurityHandler.SetEncryption(PdfDefaultEncryption.V2With128Bits); 
+            document.SecurityHandler.SetEncryption(PdfDefaultEncryption.V2With128Bits);
 
             document.SecurityHandler.OwnerPassword = "Admin";
             //document.SecurityHandler.UserPassword = "";
