@@ -22,6 +22,14 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 
+using Org.BouncyCastle.X509;
+using Org.BouncyCastle.Crypto;
+using Org.BouncyCastle.Crypto.Parameters;
+using Org.BouncyCastle.Pkcs;
+using Org.BouncyCastle.Security;
+using PdfSharp.Snippets.Pdf;
+
+
 
 namespace TestPDFSharpSignatures
 {
@@ -62,7 +70,7 @@ namespace TestPDFSharpSignatures
             sigCtl.Licence = _sdkLicenseKey;
             //DynamicCapture dc = new DynamicCaptureClass();
 
-            string inputPdf = @"C:\Users\visio\Desktop\PDF_ManipulationTests\LoremIpsumMulti.pdf";
+            string inputPdf = @"C:\Users\visio\Desktop\PDF_ManipulationTests\LoremIpsumRight.pdf";
             string outputPdf = @"C:\Users\visio\Desktop\PDF_ManipulationTests\ResultPDFSharp.pdf";
             string marker = "{{{SIGN_HERE}}}";
 
@@ -88,11 +96,25 @@ namespace TestPDFSharpSignatures
 
                             if (markerPositions.ContainsKey(signTargetPage))
                             {
-                                markerPositions[signTargetPage].Add(new System.Windows.Vector(word.BoundingBox.Left, word.BoundingBox.Top));
+                                if (word.BoundingBox.Left > page.Width * 0.5)
+                                {
+                                    markerPositions[signTargetPage].Add(new System.Windows.Vector(word.BoundingBox.Left - 25, word.BoundingBox.Top));
+                                }
+                                else
+                                {
+                                    markerPositions[signTargetPage].Add(new System.Windows.Vector(word.BoundingBox.Left, word.BoundingBox.Top));
+                                }
                             }
                             else
                             {
-                                markerPositions.Add(signTargetPage, new List<System.Windows.Vector> { new System.Windows.Vector(word.BoundingBox.Left, word.BoundingBox.Top) });
+                                if (word.BoundingBox.Left > page.Width * 0.5)
+                                {
+                                    markerPositions.Add(signTargetPage, new List<System.Windows.Vector> { new System.Windows.Vector(word.BoundingBox.Left - 25, word.BoundingBox.Top) });
+                                }
+                                else
+                                {
+                                    markerPositions.Add(signTargetPage, new List<System.Windows.Vector> { new System.Windows.Vector(word.BoundingBox.Left, word.BoundingBox.Top) });
+                                }
                             }
                         }
                     }
@@ -170,10 +192,13 @@ namespace TestPDFSharpSignatures
             if (!cert.HasPrivateKey)
                 throw new System.Exception("Il certificato non contiene la chiave privata.");
 
-            // Maybe not necessary
             var chain = new X509Chain();
-            chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
             chain.Build(cert);
+            var chainCerts = new X509Certificate2Collection();
+            foreach (var element in chain.ChainElements)
+            {
+                chainCerts.Add(element.Certificate);
+            }
 
 
             #endregion
@@ -190,7 +215,7 @@ namespace TestPDFSharpSignatures
             };
 
             PdfDocument document = PdfReader.Open(inputPdf, PdfDocumentOpenMode.Modify);
-            var pdfSignatureHandler = DigitalSignatureHandler.ForDocument(document, new PdfSharpDefaultSigner(cert, PdfMessageDigestType.SHA256), options);
+            var pdfSignatureHandler = DigitalSignatureHandler.ForDocument(document, new BouncyCastleSigner((cert, chainCerts), PdfMessageDigestType.SHA256), options);
             document.Save(outputPdf);
 
             //document.Close(); Save already do this

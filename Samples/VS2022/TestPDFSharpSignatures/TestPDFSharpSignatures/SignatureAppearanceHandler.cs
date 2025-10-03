@@ -33,7 +33,7 @@ namespace TestPDFSharpSignatures
             var font = new XFont(_font, 7.0);
             var textFormatter = new XTextFormatter(gfx);
             double num = (double)image.PixelWidth / image.PixelHeight;
-            double signatureHeight = rect.Height * .8;
+            double signatureHeight = rect.Height;
             var point = new XPoint(rect.Width / 10, rect.Height / 10);
             // Draw image.
             gfx.DrawImage(image, point.X, point.Y, signatureHeight * num, signatureHeight);
