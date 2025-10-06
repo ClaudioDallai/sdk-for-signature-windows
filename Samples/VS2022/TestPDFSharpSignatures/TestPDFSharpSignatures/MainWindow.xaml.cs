@@ -2,6 +2,11 @@
 // Wacom Ink sdk
 using FlSigCaptLib;
 using FLSIGCTLLib;
+using Microsoft.Extensions.Options;
+using Org.BouncyCastle.Asn1.Pkcs;
+using Org.BouncyCastle.Cms;
+
+
 // Crypto and signing
 using Org.BouncyCastle.Crypto;
 using Org.BouncyCastle.Crypto.Parameters;
@@ -10,6 +15,7 @@ using Org.BouncyCastle.Security;
 using Org.BouncyCastle.X509;
 // PDF related
 using PdfSharp.Drawing;
+using PdfSharp.Drawing.Layout;
 using PdfSharp.Fonts;
 using PdfSharp.Pdf;
 using PdfSharp.Pdf.AcroForms;
@@ -18,8 +24,11 @@ using PdfSharp.Pdf.IO;
 using PdfSharp.Pdf.Security;
 using PdfSharp.Pdf.Signatures;
 using PdfSharp.Snippets.Pdf;
+using System.Globalization;
+
 // System
 using System.IO;
+using System.Numerics;
 using System.Reflection.Metadata;
 using System.Security.Cryptography.Pkcs;
 using System.Security.Cryptography.X509Certificates;
@@ -33,6 +42,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
+using System.Xml.Linq;
 
 
 
@@ -43,7 +53,7 @@ using System.Windows.Shapes;
     -> BouncyCastle (legal signing, MIT);
  */
 
-   // NOT USED ANYMORE -> PigPDF (pdf data reading, forms, MIT);
+// NOT USED ANYMORE -> PigPDF (pdf data reading, forms, MIT);
 
 
 namespace TestPDFSharpSignatures
@@ -68,213 +78,219 @@ namespace TestPDFSharpSignatures
 
             InitializeComponent();
 
-            String signTargetPath = "";
-
-            //print("btnSign was pressed");
-            SigCtl sigCtl = new SigCtl();
-            sigCtl.Licence = _sdkLicenseKey;
-
-            //string inputPdf = @"C:\Users\visio\Desktop\PDF_ManipulationTests\LoremIpsumRightForms.pdf";
-            string inputPdf = @"C:\Users\visio\Desktop\PDF_ManipulationTests\LoremIpsumMultiPageForms.pdf";
-            string outputPdf = @"C:\Users\visio\Desktop\PDF_ManipulationTests\ResultPDFSharpForms.pdf";
-
-            string reason = "Firma di prova";
-            string location = "Italia";
-            string signer = "Mario Rossi";
-
-
-            // Not more used
-            #region PdfPig
-
-
-            //// Use PdfPig to interrogate the PDF and rtreive infos about sign slot locations
-            //int signTargetPage = -1;
-
-            //Dictionary<int, List<System.Windows.Vector>> markerPositions = new Dictionary<int, List<System.Windows.Vector>>();
-
-            //using (UglyToad.PdfPig.PdfDocument documentPig = UglyToad.PdfPig.PdfDocument.Open(inputPdf))
-            //{
-            //    foreach (var page in documentPig.GetPages())
-            //    {
-            //        foreach (var word in page.GetWords())
-            //        {
-            //            if (word.Text.Contains(marker_sign))
-            //            {
-            //                signTargetPage = page.Number;
-
-            //                if (markerPositions.ContainsKey(signTargetPage))
-            //                {
-            //                    if (word.BoundingBox.Left > page.Width * 0.5)
-            //                    {
-            //                        markerPositions[signTargetPage].Add(new System.Windows.Vector(word.BoundingBox.Left - 25, word.BoundingBox.Top));
-            //                    }
-            //                    else
-            //                    {
-            //                        markerPositions[signTargetPage].Add(new System.Windows.Vector(word.BoundingBox.Left, word.BoundingBox.Top));
-            //                    }
-            //                }
-            //                else
-            //                {
-            //                    if (word.BoundingBox.Left > page.Width * 0.5)
-            //                    {
-            //                        markerPositions.Add(signTargetPage, new List<System.Windows.Vector> { new System.Windows.Vector(word.BoundingBox.Left - 25, word.BoundingBox.Top) });
-            //                    }
-            //                    else
-            //                    {
-            //                        markerPositions.Add(signTargetPage, new List<System.Windows.Vector> { new System.Windows.Vector(word.BoundingBox.Left, word.BoundingBox.Top) });
-            //                    }
-            //                }
-            //            }
-            //        }
-            //    }
-
-            //    // PDFPig counts from page 1.
-            //    HashSet<int> invalidKeys = new HashSet<int>();
-            //    foreach (KeyValuePair<int, List<System.Windows.Vector>> pair in markerPositions)
-            //    {
-            //        if (pair.Key <= 0 || pair.Key > documentPig.NumberOfPages)
-            //        {
-            //            invalidKeys.Add(pair.Key);
-            //        }
-            //    }
-
-            //    foreach (int invKey in invalidKeys)
-            //    {
-            //        if (markerPositions.ContainsKey(invKey))
-            //        {
-            //            markerPositions.Remove(invKey);
-            //        }
-            //    }
-            //}
-
-            //using (UglyToad.PdfPig.PdfDocument documentPig = UglyToad.PdfPig.PdfDocument.Open(inputPdf))
-            //{
-            //    documentPig.TryGetForm(out var form);
-            //    if (form == null)
-            //    {
-            //        Console.WriteLine("Nessun AcroForm trovato.");
-            //        return;
-            //    }
-
-            //    foreach (var field in form.Fields)
-            //    {
-            //        if (field == null) continue;
-            //        if (field.Information.PartialName == _signPlaceholderForm)
-            //        {
-
-            //            markerPositions.Add(1, new List<System.Windows.Vector> { new System.Windows.Vector(field.Bounds.Value.Left, field.Bounds.Value.Right - 200d) });
-            //        }
-            //    }
-            //}
-
-
-            #endregion
-
-
-            #region Certificate
-
-
-            // Hardoded as example
-
-            // Not necessary if using Windows Certificate Store
-            //string pfxPath = @"C:\temp\firma-demo.pfx"; 
-            //string pfxPassword = "password123";
-
-
-            
-
-            // Open current user store
-            var store = new System.Security.Cryptography.X509Certificates.X509Store(
-                    System.Security.Cryptography.X509Certificates.StoreName.My,
-                    System.Security.Cryptography.X509Certificates.StoreLocation.CurrentUser);
-
-            store.Open(System.Security.Cryptography.X509Certificates.OpenFlags.ReadOnly);
-
-
-            // Cerca certificati con il subject indicato (anche quelli scaduti con validOnly:false)
-            var certs = store.Certificates.Find(
-                System.Security.Cryptography.X509Certificates.X509FindType.FindBySubjectName,
-                _subjectName,
-                validOnly: false);
-
-            if (certs.Count == 0)
-                throw new System.Exception($"Certificato con subject '{_subjectName}' non trovato.");
-
-            // Prendi il primo certificato trovato
-            // ATTENZIONE: In caso di certificati con lo stesso nome, con magari alcuni scaduti, ne va preso uno valido.
-            var cert = certs[0];
-
-
-            // I campi NotBefore e NotAfter nei certificati sono sempre espressi in UTC secondo lo standard X.509
-            DateTime now = DateTime.UtcNow;
-            if (now > cert.NotAfter.ToUniversalTime())
+            try
             {
-                throw new System.Exception($"Certificato con subject '{_subjectName}' scaduto.");
+
+
+                String signTargetPath = "";
+
+                //print("btnSign was pressed");
+                SigCtl sigCtl = new SigCtl();
+                sigCtl.Licence = _sdkLicenseKey;
+
+                string inputPdf = @"C:\Users\visio\Desktop\PDF_ManipulationTests\LoremIpsumRightForms.pdf";
+                //string inputPdf = @"C:\Users\visio\Desktop\PDF_ManipulationTests\LoremIpsumMultiForms.pdf";
+                string outputPdf = @"C:\Users\visio\Desktop\PDF_ManipulationTests\ResultPDFSharpForms.pdf";
+
+                string reason = "Firma di prova";
+                string location = "Italia";
+                string signer = "Mario Rossi";
+
+
+                // Not used anymore
+                #region PdfPig
+
+
+                //// Use PdfPig to interrogate the PDF and rtreive infos about sign slot locations
+                //int signTargetPage = -1;
+
+                //Dictionary<int, List<System.Windows.Vector>> markerPositions = new Dictionary<int, List<System.Windows.Vector>>();
+
+                //using (UglyToad.PdfPig.PdfDocument documentPig = UglyToad.PdfPig.PdfDocument.Open(inputPdf))
+                //{
+                //    foreach (var page in documentPig.GetPages())
+                //    {
+                //        foreach (var word in page.GetWords())
+                //        {
+                //            if (word.Text.Contains(marker_sign))
+                //            {
+                //                signTargetPage = page.Number;
+
+                //                if (markerPositions.ContainsKey(signTargetPage))
+                //                {
+                //                    if (word.BoundingBox.Left > page.Width * 0.5)
+                //                    {
+                //                        markerPositions[signTargetPage].Add(new System.Windows.Vector(word.BoundingBox.Left - 25, word.BoundingBox.Top));
+                //                    }
+                //                    else
+                //                    {
+                //                        markerPositions[signTargetPage].Add(new System.Windows.Vector(word.BoundingBox.Left, word.BoundingBox.Top));
+                //                    }
+                //                }
+                //                else
+                //                {
+                //                    if (word.BoundingBox.Left > page.Width * 0.5)
+                //                    {
+                //                        markerPositions.Add(signTargetPage, new List<System.Windows.Vector> { new System.Windows.Vector(word.BoundingBox.Left - 25, word.BoundingBox.Top) });
+                //                    }
+                //                    else
+                //                    {
+                //                        markerPositions.Add(signTargetPage, new List<System.Windows.Vector> { new System.Windows.Vector(word.BoundingBox.Left, word.BoundingBox.Top) });
+                //                    }
+                //                }
+                //            }
+                //        }
+                //    }
+
+                //    // PDFPig counts from page 1.
+                //    HashSet<int> invalidKeys = new HashSet<int>();
+                //    foreach (KeyValuePair<int, List<System.Windows.Vector>> pair in markerPositions)
+                //    {
+                //        if (pair.Key <= 0 || pair.Key > documentPig.NumberOfPages)
+                //        {
+                //            invalidKeys.Add(pair.Key);
+                //        }
+                //    }
+
+                //    foreach (int invKey in invalidKeys)
+                //    {
+                //        if (markerPositions.ContainsKey(invKey))
+                //        {
+                //            markerPositions.Remove(invKey);
+                //        }
+                //    }
+                //}
+
+                //using (UglyToad.PdfPig.PdfDocument documentPig = UglyToad.PdfPig.PdfDocument.Open(inputPdf))
+                //{
+                //    documentPig.TryGetForm(out var form);
+                //    if (form == null)
+                //    {
+                //        Console.WriteLine("Nessun AcroForm trovato.");
+                //        return;
+                //    }
+
+                //    foreach (var field in form.Fields)
+                //    {
+                //        if (field == null) continue;
+                //        if (field.Information.PartialName == _signPlaceholderForm)
+                //        {
+
+                //            markerPositions.Add(1, new List<System.Windows.Vector> { new System.Windows.Vector(field.Bounds.Value.Left, field.Bounds.Value.Right - 200d) });
+                //        }
+                //    }
+                //}
+
+
+                #endregion
+
+
+                #region Certificate
+
+
+                // Hardoded as example
+
+                // Not necessary if using Windows Certificate Store
+                //string pfxPath = @"C:\temp\firma-demo.pfx"; 
+                //string pfxPassword = "password123";
+
+
+
+
+                // Open current user store
+                var store = new System.Security.Cryptography.X509Certificates.X509Store(
+                        System.Security.Cryptography.X509Certificates.StoreName.My,
+                        System.Security.Cryptography.X509Certificates.StoreLocation.CurrentUser);
+
+                store.Open(System.Security.Cryptography.X509Certificates.OpenFlags.ReadOnly);
+
+
+                // Cerca certificati con il subject indicato (anche quelli scaduti con validOnly:false)
+                var certs = store.Certificates.Find(
+                    System.Security.Cryptography.X509Certificates.X509FindType.FindBySubjectName,
+                    _subjectName,
+                    validOnly: false);
+
+                if (certs.Count == 0)
+                    throw new System.Exception($"Certificato con subject '{_subjectName}' non trovato.");
+
+                // Prendi il primo certificato trovato
+                // ATTENZIONE: In caso di certificati con lo stesso nome, con magari alcuni scaduti, ne va preso uno valido.
+                var cert = certs[0];
+
+
+                // I campi NotBefore e NotAfter nei certificati sono sempre espressi in UTC secondo lo standard X.509
+                DateTime now = DateTime.UtcNow;
+                if (now > cert.NotAfter.ToUniversalTime())
+                {
+                    throw new System.Exception($"Certificato con subject '{_subjectName}' scaduto.");
+                }
+
+                if (!cert.HasPrivateKey)
+                    throw new System.Exception("Il certificato non contiene la chiave privata.");
+
+                var chain = new X509Chain();
+                chain.Build(cert);
+                var chainCerts = new X509Certificate2Collection();
+                foreach (var element in chain.ChainElements)
+                {
+                    chainCerts.Add(element.Certificate);
+                }
+
+
+                #endregion
+
+
+                // PDFSharp has lots of problem in recognizing metadata of acroforms, better to use texts and use AcroForms just as placeholders to get location.
+                PdfDocument document = PdfReader.Open(inputPdf, PdfDocumentOpenMode.Modify);
+                PdfAcroForm formFields = document.AcroForm;
+
+
+                // Name and Surname
+                int? pageName_index = GetPageIndexOfField(document, _nameSurnameForm);
+                if (pageName_index.HasValue)
+                {
+                    InsertNameSurname(document, formFields, pageName_index.Value, signer);
+                }
+
+
+                // Sign
+                int? pageSign_index = GetPageIndexOfField(document, _signPlaceholderForm);
+                if (pageSign_index.HasValue)
+                {
+                    InsertSignature(out DigitalSignatureOptions? options, formFields, sigCtl, pageSign_index.Value, ref signTargetPath, signer, location, reason);
+
+                    if (options != null)
+                    {
+                        // Different alghoritms are available. This one is required to work on Edge PDF Viewer (Microsoft issue)
+                        document.SecurityHandler.SetEncryption(PdfDefaultEncryption.V2With128Bits);
+
+                        document.SecurityHandler.OwnerPassword = "Admin_Visio";
+                        //document.SecurityHandler.UserPassword = "";
+
+                        document.SecuritySettings.PermitPrint = true;
+                        document.SecuritySettings.PermitFullQualityPrint = true;
+                        document.SecuritySettings.PermitExtractContent = true;
+
+                        document.SecuritySettings.PermitAssembleDocument = false;
+                        document.SecuritySettings.PermitModifyDocument = false;
+                        document.SecuritySettings.PermitFormsFill = false;
+                        document.SecuritySettings.PermitAnnotations = false;
+
+
+                        var pdfSignatureHandler = DigitalSignatureHandler.ForDocument(document, new BouncyCastleSigner((cert, chainCerts), PdfMessageDigestType.SHA256), options);
+                        document.Save(outputPdf);
+                        //document.Close(); Save already do this
+                    }
+                }
+
+                store.Close();
+            }
+            catch
+            {
             }
 
-            if (!cert.HasPrivateKey)
-                throw new System.Exception("Il certificato non contiene la chiave privata.");
 
-            var chain = new X509Chain();
-            chain.Build(cert);
-            var chainCerts = new X509Certificate2Collection();
-            foreach (var element in chain.ChainElements)
-            {
-                chainCerts.Add(element.Certificate);
-            }
-
-
-            #endregion
-
-
-            PdfDocument document = PdfReader.Open(inputPdf, PdfDocumentOpenMode.Modify);
-
-            // Name and Surname
-            // PDFSharp has lots of problem in recognizing metadata of acroforms, for example Font. We can force this here if needed.
-            PdfAcroForm formfield = document.AcroForm;
-            PdfTextField testField = (PdfTextField)(formfield.Fields[_nameSurnameForm]);
-            testField.Text = signer;
-
-            // get sign placeholder location
-            PdfTextField testSignField = (PdfTextField)(formfield.Fields[_signPlaceholderForm]);
-            int page = (int)GetPageIndexOfField(document, _signPlaceholderForm);
-            PdfRectangle rect = testSignField.Elements.GetRectangle(PdfAnnotation.Keys.Rect);
-            XRect locationFinal = rect.ToXRect();
-
-            ActivateWacom(sigCtl, ref signTargetPath);
-            var options = new DigitalSignatureOptions
-            {
-                ContactInfo = signer,
-                Location = location,
-                Reason = reason,
-                Rectangle = new XRect(locationFinal.Location.X, locationFinal.Location.Y, 150d, 100d),
-                AppearanceHandler = new SignatureAppearanceHandler(signTargetPath, signer, location, _font),
-                AppName = _appName,
-                PageIndex = page
-            };
-
-
-            // Different alghoritms are available. This one is required to work on Edge PDF Viewer (Microsoft issue)
-            document.SecurityHandler.SetEncryption(PdfDefaultEncryption.V2With128Bits);
-
-            document.SecurityHandler.OwnerPassword = "Admin_Visio";
-            //document.SecurityHandler.UserPassword = "";
-
-            document.SecuritySettings.PermitPrint = true;
-            document.SecuritySettings.PermitFullQualityPrint = true;
-            document.SecuritySettings.PermitExtractContent = true;
-
-            document.SecuritySettings.PermitAssembleDocument = false;
-            document.SecuritySettings.PermitModifyDocument = false;
-            document.SecuritySettings.PermitFormsFill = false;
-            document.SecuritySettings.PermitAnnotations = false;
-
-
-            var pdfSignatureHandler = DigitalSignatureHandler.ForDocument(document, new BouncyCastleSigner((cert, chainCerts), PdfMessageDigestType.SHA256), options);
-            document.Save(outputPdf);
-            //document.Close(); Save already do this
-
-            store.Close();
             Application.Current.Shutdown();
         }
 
@@ -355,14 +371,63 @@ namespace TestPDFSharpSignatures
                         string t = annotation.Elements.GetString("/T");
                         if (t == fieldName)
                         {
-                            return i; // trovato!
+                            return i;
                         }
                     }
                 }
             }
+
             return null;
         }
 
+
+        void InsertNameSurname(PdfDocument document, PdfAcroForm formFields, int pageName_index, string signer)
+        {
+            PdfAcroField? nameField = formFields.Fields[_nameSurnameForm];
+            if (nameField == null) return;
+
+            var nameFormPage = document.Pages[pageName_index];
+
+            var font = new XFont(_font, 25d);
+            XGraphics gfx = XGraphics.FromPdfPage(nameFormPage);
+            var textFormatter = new XTextFormatter(gfx);
+
+            PdfRectangle rectName = nameField.Elements.GetRectangle(PdfAnnotation.Keys.Rect);
+            XRect locationFinalName = rectName.ToXRect();
+
+            // Text has pivot inverted
+            double invertedY = nameFormPage.Height.Point - locationFinalName.Y - locationFinalName.Height;
+            XRect adjustedNameRect = new XRect(locationFinalName.X, invertedY, locationFinalName.Width, locationFinalName.Height);
+
+            //gfx.DrawRectangle(XPens.Red, adjustedNameRect);
+            textFormatter.DrawString(signer, font, XBrushes.Black, adjustedNameRect, XStringFormats.TopLeft);
+        }
+
+        void InsertSignature(out DigitalSignatureOptions? options, PdfAcroForm formFields, SigCtl sigCtl, int pageSign_index, ref string signTargetPath, string signer, string location, string reason)
+        {
+
+            PdfAcroField? testSignField = formFields.Fields[_signPlaceholderForm];
+            if (testSignField == null)
+            {
+                options = null;
+                return;
+            }
+
+            PdfRectangle rectSign = testSignField.Elements.GetRectangle(PdfAnnotation.Keys.Rect);
+            XRect locationFinalSign = rectSign.ToXRect();
+
+            ActivateWacom(sigCtl, ref signTargetPath);
+            options = new DigitalSignatureOptions
+            {
+                ContactInfo = signer,
+                Location = location,
+                Reason = reason,
+                Rectangle = new XRect(locationFinalSign.Location.X, locationFinalSign.Location.Y, 150d, 100d),
+                AppearanceHandler = new SignatureAppearanceHandler(signTargetPath, signer, location, _font),
+                AppName = _appName,
+                PageIndex = pageSign_index
+            };
+        }
 
     }
 }
