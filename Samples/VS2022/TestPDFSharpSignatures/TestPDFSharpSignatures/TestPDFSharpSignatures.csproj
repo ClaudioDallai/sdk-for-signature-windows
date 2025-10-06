@@ -31,7 +31,6 @@
 
   <ItemGroup>
     <PackageReference Include="BouncyCastle.Cryptography" Version="2.6.2" />
-    <PackageReference Include="PdfPig" Version="0.1.11" />
     <PackageReference Include="PDFsharp-WPF" Version="6.2.2" />
     <PackageReference Include="System.Security.Cryptography.Pkcs" Version="9.0.9" />
   </ItemGroup>

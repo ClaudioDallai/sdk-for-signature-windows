@@ -2,32 +2,27 @@
 // Wacom Ink sdk
 using FlSigCaptLib;
 using FLSIGCTLLib;
-
 // Crypto and signing
 using Org.BouncyCastle.Crypto;
 using Org.BouncyCastle.Crypto.Parameters;
 using Org.BouncyCastle.Pkcs;
 using Org.BouncyCastle.Security;
 using Org.BouncyCastle.X509;
-using System.Reflection.Metadata;
-using System.Security.Cryptography.Pkcs;
-using System.Security.Cryptography.X509Certificates;
-using PdfSharp.Pdf.Security;
-using PdfSharp.Pdf.Signatures;
-
 // PDF related
 using PdfSharp.Drawing;
 using PdfSharp.Fonts;
 using PdfSharp.Pdf;
 using PdfSharp.Pdf.AcroForms;
+using PdfSharp.Pdf.Annotations;
 using PdfSharp.Pdf.IO;
+using PdfSharp.Pdf.Security;
+using PdfSharp.Pdf.Signatures;
 using PdfSharp.Snippets.Pdf;
-using UglyToad.PdfPig.AcroForms;
-using UglyToad.PdfPig.AcroForms.Fields;
-using UglyToad.PdfPig.Content;
-
 // System
 using System.IO;
+using System.Reflection.Metadata;
+using System.Security.Cryptography.Pkcs;
+using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Windows;
 using System.Windows.Controls;
@@ -40,13 +35,15 @@ using System.Windows.Navigation;
 using System.Windows.Shapes;
 
 
+
 /*
  Libraries and technologies used:
     -> Wacom INK SDK (free license if only used to sign using Wacom STU);
-    -> PigPDF (pdf data reading, forms, MIT);
     -> PDFSharp (pdf data creation, forms, signing, MIT);
     -> BouncyCastle (legal signing, MIT);
  */
+
+   // NOT USED ANYMORE -> PigPDF (pdf data reading, forms, MIT);
 
 
 namespace TestPDFSharpSignatures
@@ -60,6 +57,7 @@ namespace TestPDFSharpSignatures
         private readonly string _font = "Arial";
         private readonly string _nameSurnameForm = "Name_Surname_Form";
         private readonly string _signPlaceholderForm = "Sign_Placeholder_Form";
+        private readonly string _appName = "Sign_It - Wacom STU430";
 
         // Certificate subject name
         private readonly string _subjectName = "FirmaDemo";
@@ -76,22 +74,23 @@ namespace TestPDFSharpSignatures
             SigCtl sigCtl = new SigCtl();
             sigCtl.Licence = _sdkLicenseKey;
 
-            string inputPdf = @"C:\Users\visio\Desktop\PDF_ManipulationTests\LoremIpsumRightForms.pdf";
+            //string inputPdf = @"C:\Users\visio\Desktop\PDF_ManipulationTests\LoremIpsumRightForms.pdf";
+            string inputPdf = @"C:\Users\visio\Desktop\PDF_ManipulationTests\LoremIpsumMultiPageForms.pdf";
             string outputPdf = @"C:\Users\visio\Desktop\PDF_ManipulationTests\ResultPDFSharpForms.pdf";
 
             string reason = "Firma di prova";
             string location = "Italia";
-            string signer = "Rario Mossi";
+            string signer = "Mario Rossi";
 
 
-            // Get signature requested positions in every page. Using PDFSharp works only for a single signature.
+            // Not more used
             #region PdfPig
 
 
             //// Use PdfPig to interrogate the PDF and rtreive infos about sign slot locations
             //int signTargetPage = -1;
 
-            Dictionary<int, List<System.Windows.Vector>> markerPositions = new Dictionary<int, List<System.Windows.Vector>>();
+            //Dictionary<int, List<System.Windows.Vector>> markerPositions = new Dictionary<int, List<System.Windows.Vector>>();
 
             //using (UglyToad.PdfPig.PdfDocument documentPig = UglyToad.PdfPig.PdfDocument.Open(inputPdf))
             //{
@@ -148,26 +147,25 @@ namespace TestPDFSharpSignatures
             //    }
             //}
 
-            using (UglyToad.PdfPig.PdfDocument documentPig = UglyToad.PdfPig.PdfDocument.Open(inputPdf))
-            {
-                documentPig.TryGetForm(out var form);
-                if (form == null)
-                {
-                    Console.WriteLine("Nessun AcroForm trovato.");
-                    return;
-                }
+            //using (UglyToad.PdfPig.PdfDocument documentPig = UglyToad.PdfPig.PdfDocument.Open(inputPdf))
+            //{
+            //    documentPig.TryGetForm(out var form);
+            //    if (form == null)
+            //    {
+            //        Console.WriteLine("Nessun AcroForm trovato.");
+            //        return;
+            //    }
 
-                foreach (var field in form.Fields)
-                {
-                    if (field == null) continue;
+            //    foreach (var field in form.Fields)
+            //    {
+            //        if (field == null) continue;
+            //        if (field.Information.PartialName == _signPlaceholderForm)
+            //        {
 
-                    if (field.Information.PartialName == _signPlaceholderForm)
-                    {
-
-                        markerPositions.Add(field.PageNumber.Value, new List<System.Windows.Vector> { new System.Windows.Vector(field.Bounds.Value.Left, field.Bounds.Value.Right) });
-                    }
-                }
-            }
+            //            markerPositions.Add(1, new List<System.Windows.Vector> { new System.Windows.Vector(field.Bounds.Value.Left, field.Bounds.Value.Right - 200d) });
+            //        }
+            //    }
+            //}
 
 
             #endregion
@@ -231,11 +229,17 @@ namespace TestPDFSharpSignatures
 
             PdfDocument document = PdfReader.Open(inputPdf, PdfDocumentOpenMode.Modify);
 
-
+            // Name and Surname
+            // PDFSharp has lots of problem in recognizing metadata of acroforms, for example Font. We can force this here if needed.
             PdfAcroForm formfield = document.AcroForm;
-            PdfTextField testField = (PdfTextField)(formfield.Fields["Text1"]);
+            PdfTextField testField = (PdfTextField)(formfield.Fields[_nameSurnameForm]);
             testField.Text = signer;
 
+            // get sign placeholder location
+            PdfTextField testSignField = (PdfTextField)(formfield.Fields[_signPlaceholderForm]);
+            int page = (int)GetPageIndexOfField(document, _signPlaceholderForm);
+            PdfRectangle rect = testSignField.Elements.GetRectangle(PdfAnnotation.Keys.Rect);
+            XRect locationFinal = rect.ToXRect();
 
             ActivateWacom(sigCtl, ref signTargetPath);
             var options = new DigitalSignatureOptions
@@ -243,17 +247,17 @@ namespace TestPDFSharpSignatures
                 ContactInfo = signer,
                 Location = location,
                 Reason = reason,
-                Rectangle = new XRect((double)markerPositions[1][0].X, (double)markerPositions[1][0].Y, 150d, 100d),
+                Rectangle = new XRect(locationFinal.Location.X, locationFinal.Location.Y, 150d, 100d),
                 AppearanceHandler = new SignatureAppearanceHandler(signTargetPath, signer, location, _font),
-                AppName = "Sign_It",
-
+                AppName = _appName,
+                PageIndex = page
             };
 
 
             // Different alghoritms are available. This one is required to work on Edge PDF Viewer (Microsoft issue)
             document.SecurityHandler.SetEncryption(PdfDefaultEncryption.V2With128Bits);
 
-            document.SecurityHandler.OwnerPassword = "Admin";
+            document.SecurityHandler.OwnerPassword = "Admin_Visio";
             //document.SecurityHandler.UserPassword = "";
 
             document.SecuritySettings.PermitPrint = true;
@@ -332,5 +336,33 @@ namespace TestPDFSharpSignatures
                 }
             }
         }
+
+        int? GetPageIndexOfField(PdfDocument document, string fieldName)
+        {
+            for (int i = 0; i < document.Pages.Count; i++)
+            {
+                PdfPage page = document.Pages[i];
+                if (page.Annotations == null)
+                    continue;
+
+                foreach (PdfAnnotation annotation in page.Annotations)
+                {
+                    // Controlla se l'annotazione è di tipo /Widget
+                    var subtype = annotation.Elements.GetName("/Subtype");
+                    if (subtype == "/Widget")
+                    {
+                        // Leggi il nome del campo /T
+                        string t = annotation.Elements.GetString("/T");
+                        if (t == fieldName)
+                        {
+                            return i; // trovato!
+                        }
+                    }
+                }
+            }
+            return null;
+        }
+
+
     }
 }
