@@ -2,47 +2,25 @@
 // Wacom Ink sdk
 using FlSigCaptLib;
 using FLSIGCTLLib;
-using Microsoft.Extensions.Options;
-using Org.BouncyCastle.Asn1.Pkcs;
-using Org.BouncyCastle.Cms;
-
 
 // Crypto and signing
-using Org.BouncyCastle.Crypto;
-using Org.BouncyCastle.Crypto.Parameters;
-using Org.BouncyCastle.Pkcs;
-using Org.BouncyCastle.Security;
-using Org.BouncyCastle.X509;
+using PdfSharp.Pdf.Security;
+using PdfSharp.Pdf.Signatures;
+using System.Security.Cryptography.X509Certificates;
+
 // PDF related
 using PdfSharp.Drawing;
 using PdfSharp.Drawing.Layout;
-using PdfSharp.Fonts;
 using PdfSharp.Pdf;
 using PdfSharp.Pdf.AcroForms;
 using PdfSharp.Pdf.Annotations;
 using PdfSharp.Pdf.IO;
-using PdfSharp.Pdf.Security;
-using PdfSharp.Pdf.Signatures;
 using PdfSharp.Snippets.Pdf;
-using System.Globalization;
 
 // System
 using System.IO;
-using System.Numerics;
-using System.Reflection.Metadata;
-using System.Security.Cryptography.Pkcs;
-using System.Security.Cryptography.X509Certificates;
-using System.Text;
 using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
 using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
-using System.Xml.Linq;
 
 
 
@@ -379,7 +357,6 @@ namespace TestPDFSharpSignatures
 
             return null;
         }
-
 
         void InsertNameSurname(PdfDocument document, PdfAcroForm formFields, int pageName_index, string signer)
         {
