@@ -1,23 +1,33 @@
-﻿// Wacom Ink sdk
+﻿
+// Wacom Ink sdk
 using FlSigCaptLib;
 using FLSIGCTLLib;
+
+// Crypto and signing
 using Org.BouncyCastle.Crypto;
 using Org.BouncyCastle.Crypto.Parameters;
 using Org.BouncyCastle.Pkcs;
 using Org.BouncyCastle.Security;
 using Org.BouncyCastle.X509;
+using System.Reflection.Metadata;
+using System.Security.Cryptography.Pkcs;
+using System.Security.Cryptography.X509Certificates;
+using PdfSharp.Pdf.Security;
+using PdfSharp.Pdf.Signatures;
+
+// PDF related
 using PdfSharp.Drawing;
 using PdfSharp.Fonts;
 using PdfSharp.Pdf;
 using PdfSharp.Pdf.AcroForms;
 using PdfSharp.Pdf.IO;
-using PdfSharp.Pdf.Security;
-using PdfSharp.Pdf.Signatures;
 using PdfSharp.Snippets.Pdf;
+using UglyToad.PdfPig.AcroForms;
+using UglyToad.PdfPig.AcroForms.Fields;
+using UglyToad.PdfPig.Content;
+
+// System
 using System.IO;
-using System.Reflection.Metadata;
-using System.Security.Cryptography.Pkcs;
-using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Windows;
 using System.Windows.Controls;
@@ -28,17 +38,13 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
-using UglyToad.PdfPig.AcroForms;
-using UglyToad.PdfPig.AcroForms.Fields;
-using UglyToad.PdfPig.Content;
 
 
 /*
  Libraries and technologies used:
-
     -> Wacom INK SDK (free license if only used to sign using Wacom STU);
-    -> PigPDF (pdf data reading, MIT);
-    -> PDFSharp (pdf data creation and signing, MIT);
+    -> PigPDF (pdf data reading, forms, MIT);
+    -> PDFSharp (pdf data creation, forms, signing, MIT);
     -> BouncyCastle (legal signing, MIT);
  */
 
@@ -52,6 +58,12 @@ namespace TestPDFSharpSignatures
     {
         private readonly string _sdkLicenseKey = "eyJhbGciOiJSUzUxMiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiI3YmM5Y2IxYWIxMGE0NmUxODI2N2E5MTJkYTA2ZTI3NiIsImV4cCI6MjE0NzQ4MzY0NywiaWF0IjoxNTYwOTUwMjcyLCJyaWdodHMiOlsiU0lHX1NES19DT1JFIiwiU0lHQ0FQVFhfQUNDRVNTIl0sImRldmljZXMiOlsiV0FDT01fQU5ZIl0sInR5cGUiOiJwcm9kIiwibGljX25hbWUiOiJTaWduYXR1cmUgU0RLIiwid2Fjb21faWQiOiI3YmM5Y2IxYWIxMGE0NmUxODI2N2E5MTJkYTA2ZTI3NiIsImxpY191aWQiOiJiODUyM2ViYi0xOGI3LTQ3OGEtYTlkZS04NDlmZTIyNmIwMDIiLCJhcHBzX3dpbmRvd3MiOltdLCJhcHBzX2lvcyI6W10sImFwcHNfYW5kcm9pZCI6W10sIm1hY2hpbmVfaWRzIjpbXX0.ONy3iYQ7lC6rQhou7rz4iJT_OJ20087gWz7GtCgYX3uNtKjmnEaNuP3QkjgxOK_vgOrTdwzD-nm-ysiTDs2GcPlOdUPErSp_bcX8kFBZVmGLyJtmeInAW6HuSp2-57ngoGFivTH_l1kkQ1KMvzDKHJbRglsPpd4nVHhx9WkvqczXyogldygvl0LRidyPOsS5H2GYmaPiyIp9In6meqeNQ1n9zkxSHo7B11mp_WXJXl0k1pek7py8XYCedCNW5qnLi4UCNlfTd6Mk9qz31arsiWsesPeR9PN121LBJtiPi023yQU8mgb9piw_a-ccciviJuNsEuRDN3sGnqONG3dMSA";
         private readonly string _font = "Arial";
+        private readonly string _nameSurnameForm = "Name_Surname_Form";
+        private readonly string _signPlaceholderForm = "Sign_Placeholder_Form";
+
+        // Certificate subject name
+        private readonly string _subjectName = "FirmaDemo";
+
 
         public MainWindow()
         {
@@ -63,18 +75,13 @@ namespace TestPDFSharpSignatures
             //print("btnSign was pressed");
             SigCtl sigCtl = new SigCtl();
             sigCtl.Licence = _sdkLicenseKey;
-            //DynamicCapture dc = new DynamicCaptureClass();
 
-            string inputPdf = @"C:\Users\visio\Desktop\PDF_ManipulationTests\LoremIpsumLeft.pdf";
+            string inputPdf = @"C:\Users\visio\Desktop\PDF_ManipulationTests\LoremIpsumRightForms.pdf";
             string outputPdf = @"C:\Users\visio\Desktop\PDF_ManipulationTests\ResultPDFSharpForms.pdf";
-
-            string marker_sign = "{{{SIGN_HERE}}}";
-            string marker_name = "{{{NAME_HERE}}}";
-            string marker_surname = "{{{SURNAME_HERE}}}";
 
             string reason = "Firma di prova";
             string location = "Italia";
-            string signer = "Mario Rossi";
+            string signer = "Rario Mossi";
 
 
             // Get signature requested positions in every page. Using PDFSharp works only for a single signature.
@@ -152,10 +159,12 @@ namespace TestPDFSharpSignatures
 
                 foreach (var field in form.Fields)
                 {
-                    if (field.Information.PartialName == "Text2")
+                    if (field == null) continue;
+
+                    if (field.Information.PartialName == _signPlaceholderForm)
                     {
 
-                        markerPositions.Add(field.PageNumber.Value, new List<System.Windows.Vector> { new System.Windows.Vector(field.Bounds.Value.Left, field.Bounds.Value.Right - 50d) });
+                        markerPositions.Add(field.PageNumber.Value, new List<System.Windows.Vector> { new System.Windows.Vector(field.Bounds.Value.Left, field.Bounds.Value.Right) });
                     }
                 }
             }
@@ -174,8 +183,7 @@ namespace TestPDFSharpSignatures
             //string pfxPassword = "password123";
 
 
-            // Certificate subject name
-            string subjectName = "FirmaDemo";
+            
 
             // Open current user store
             var store = new System.Security.Cryptography.X509Certificates.X509Store(
@@ -188,11 +196,11 @@ namespace TestPDFSharpSignatures
             // Cerca certificati con il subject indicato (anche quelli scaduti con validOnly:false)
             var certs = store.Certificates.Find(
                 System.Security.Cryptography.X509Certificates.X509FindType.FindBySubjectName,
-                subjectName,
+                _subjectName,
                 validOnly: false);
 
             if (certs.Count == 0)
-                throw new System.Exception($"Certificato con subject '{subjectName}' non trovato.");
+                throw new System.Exception($"Certificato con subject '{_subjectName}' non trovato.");
 
             // Prendi il primo certificato trovato
             // ATTENZIONE: In caso di certificati con lo stesso nome, con magari alcuni scaduti, ne va preso uno valido.
@@ -203,7 +211,7 @@ namespace TestPDFSharpSignatures
             DateTime now = DateTime.UtcNow;
             if (now > cert.NotAfter.ToUniversalTime())
             {
-                throw new System.Exception($"Certificato con subject '{subjectName}' scaduto.");
+                throw new System.Exception($"Certificato con subject '{_subjectName}' scaduto.");
             }
 
             if (!cert.HasPrivateKey)
@@ -224,20 +232,9 @@ namespace TestPDFSharpSignatures
             PdfDocument document = PdfReader.Open(inputPdf, PdfDocumentOpenMode.Modify);
 
 
-            // TODO: Undersant forms
-            //PdfAcroForm formfield = document.AcroForm;
-
-            //if (formfield.Elements.ContainsKey("/NeedAppearances"))
-            //{
-            //    formfield.Elements["/NeedAppearances"] = new PdfSharp.Pdf.PdfBoolean(true);
-            //}
-            //else
-            //{
-            //    formfield.Elements.Add("/NeedAppearances", new PdfSharp.Pdf.PdfBoolean(true));
-            //}
-
-            //PdfTextField testField = (PdfTextField)(formfield.Fields["Text1"]);
-            //testField.Text = signer;
+            PdfAcroForm formfield = document.AcroForm;
+            PdfTextField testField = (PdfTextField)(formfield.Fields["Text1"]);
+            testField.Text = signer;
 
 
             ActivateWacom(sigCtl, ref signTargetPath);
@@ -247,7 +244,9 @@ namespace TestPDFSharpSignatures
                 Location = location,
                 Reason = reason,
                 Rectangle = new XRect((double)markerPositions[1][0].X, (double)markerPositions[1][0].Y, 150d, 100d),
-                AppearanceHandler = new SignatureAppearanceHandler(signTargetPath, signer, location, _font)
+                AppearanceHandler = new SignatureAppearanceHandler(signTargetPath, signer, location, _font),
+                AppName = "Sign_It",
+
             };
 
 
