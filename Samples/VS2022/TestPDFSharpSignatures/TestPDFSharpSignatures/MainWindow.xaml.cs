@@ -45,7 +45,8 @@ namespace TestPDFSharpSignatures
         private readonly string _font = "Arial";
         private readonly string _nameSurnameForm = "Name_Surname_Form";
         private readonly string _signPlaceholderForm = "Sign_Placeholder_Form";
-        private readonly string _appName = "Sign_It - Wacom STU430";
+        private readonly string _currentDateForm = "Current_Date_Form";
+        private readonly string _appName = " [Sign_It] -> Wacom STU-430";
 
         // Certificate subject name
         private readonly string _subjectName = "FirmaDemo";
@@ -66,13 +67,14 @@ namespace TestPDFSharpSignatures
                 SigCtl sigCtl = new SigCtl();
                 sigCtl.Licence = _sdkLicenseKey;
 
-                string inputPdf = @"C:\Users\visio\Desktop\PDF_ManipulationTests\LoremIpsumRightForms.pdf";
+                string inputPdf = @"C:\Users\visio\Desktop\PDF_ManipulationTests\ModelloAutorizzazioneTrattamentoDatiForm.pdf";
+                //string inputPdf = @"C:\Users\visio\Desktop\PDF_ManipulationTests\LoremIpsumRightForms.pdf";
                 //string inputPdf = @"C:\Users\visio\Desktop\PDF_ManipulationTests\LoremIpsumMultiForms.pdf";
-                string outputPdf = @"C:\Users\visio\Desktop\PDF_ManipulationTests\ResultPDFSharpForms.pdf";
+                string outputPath = @"C:\Users\visio\Desktop\PDF_ManipulationTests\";
 
-                string reason = "Firma di prova";
-                string location = "Italia";
-                string signer = "Mario Rossi";
+                string reason = "Firma Di Prova";
+                string location = "Italia, Firenze";
+                string signer = "Luca Bianchi";
 
 
                 // Not used anymore
@@ -228,9 +230,16 @@ namespace TestPDFSharpSignatures
                 int? pageName_index = GetPageIndexOfField(document, _nameSurnameForm);
                 if (pageName_index.HasValue)
                 {
-                    InsertNameSurname(document, formFields, pageName_index.Value, signer);
+                    InsertTextWhereIsForm(document, formFields, pageName_index.Value, _nameSurnameForm, signer);
                 }
 
+                // Date and place
+                string dateAndPlace = location + "," + $" {DateTime.Now.ToString("dd/MM/yyyy")}";
+                int? pageDate_index = GetPageIndexOfField(document, _currentDateForm);
+                if (pageDate_index.HasValue)
+                {
+                    InsertTextWhereIsForm(document, formFields, pageDate_index.Value, _currentDateForm, dateAndPlace);
+                }
 
                 // Sign
                 int? pageSign_index = GetPageIndexOfField(document, _signPlaceholderForm);
@@ -257,7 +266,9 @@ namespace TestPDFSharpSignatures
 
 
                         var pdfSignatureHandler = DigitalSignatureHandler.ForDocument(document, new BouncyCastleSigner((cert, chainCerts), PdfMessageDigestType.SHA256), options);
-                        document.Save(outputPdf);
+                        string resultPDF = outputPath + $"{signer.Replace(" ", "")}_{reason.Replace(" ", "")}.pdf";
+
+                        document.Save(resultPDF);
                         //document.Close(); Save already do this
                     }
                 }
@@ -272,10 +283,10 @@ namespace TestPDFSharpSignatures
             Application.Current.Shutdown();
         }
 
-        public void ActivateWacom(SigCtl sigCtl, ref string signTargetPath)
+        public void ActivateWacom(SigCtl sigCtl, ref string signTargetPath, string signer, string reason)
         {
             DynamicCapture dc = new FlSigCaptLib.DynamicCapture();
-            DynamicCaptureResult res = dc.Capture(sigCtl, "Mario Rossi", "Presentazione Esempio 1", null, null);
+            DynamicCaptureResult res = dc.Capture(sigCtl, signer, reason, null, null);
             if (res == DynamicCaptureResult.DynCaptOK)
             {
                 //print("signature captured successfully");
@@ -358,26 +369,35 @@ namespace TestPDFSharpSignatures
             return null;
         }
 
-        void InsertNameSurname(PdfDocument document, PdfAcroForm formFields, int pageName_index, string signer)
+        void InsertTextWhereIsForm(PdfDocument document, PdfAcroForm formFields, int pageName_index, string field, string text)
         {
-            PdfAcroField? nameField = formFields.Fields[_nameSurnameForm];
-            if (nameField == null) return;
+            try
+            {
 
-            var nameFormPage = document.Pages[pageName_index];
+                PdfAcroField? nameField = formFields.Fields[field];
+                if (nameField == null) return;
 
-            var font = new XFont(_font, 25d);
-            XGraphics gfx = XGraphics.FromPdfPage(nameFormPage);
-            var textFormatter = new XTextFormatter(gfx);
+                var nameFormPage = document.Pages[pageName_index];
 
-            PdfRectangle rectName = nameField.Elements.GetRectangle(PdfAnnotation.Keys.Rect);
-            XRect locationFinalName = rectName.ToXRect();
+                var font = new XFont(_font, 14d);
+                XGraphics gfx = XGraphics.FromPdfPage(nameFormPage);
+                var textFormatter = new XTextFormatter(gfx);
 
-            // Text has pivot inverted
-            double invertedY = nameFormPage.Height.Point - locationFinalName.Y - locationFinalName.Height;
-            XRect adjustedNameRect = new XRect(locationFinalName.X, invertedY, locationFinalName.Width, locationFinalName.Height);
+                PdfRectangle rectName = nameField.Elements.GetRectangle(PdfAnnotation.Keys.Rect);
+                XRect locationFinalName = rectName.ToXRect();
 
-            //gfx.DrawRectangle(XPens.Red, adjustedNameRect);
-            textFormatter.DrawString(signer, font, XBrushes.Black, adjustedNameRect, XStringFormats.TopLeft);
+                // Text has pivot inverted
+                double invertedY = nameFormPage.Height.Point - locationFinalName.Y - locationFinalName.Height;
+                XRect adjustedNameRect = new XRect(locationFinalName.X, invertedY, locationFinalName.Width, locationFinalName.Height);
+
+                //gfx.DrawRectangle(XPens.Red, adjustedNameRect);
+                textFormatter.DrawString(text, font, XBrushes.Black, adjustedNameRect, XStringFormats.TopLeft);
+                gfx.Dispose();
+            }
+            catch
+            {
+
+            }
         }
 
         void InsertSignature(out DigitalSignatureOptions? options, PdfAcroForm formFields, SigCtl sigCtl, int pageSign_index, ref string signTargetPath, string signer, string location, string reason)
@@ -393,7 +413,7 @@ namespace TestPDFSharpSignatures
             PdfRectangle rectSign = testSignField.Elements.GetRectangle(PdfAnnotation.Keys.Rect);
             XRect locationFinalSign = rectSign.ToXRect();
 
-            ActivateWacom(sigCtl, ref signTargetPath);
+            ActivateWacom(sigCtl, ref signTargetPath, signer, reason);
             options = new DigitalSignatureOptions
             {
                 ContactInfo = signer,
