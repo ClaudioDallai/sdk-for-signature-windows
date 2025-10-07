@@ -72,7 +72,7 @@ namespace TestPDFSharpSignatures
                 //string inputPdf = @"C:\Users\visio\Desktop\PDF_ManipulationTests\LoremIpsumMultiForms.pdf";
                 string outputPath = @"C:\Users\visio\Desktop\PDF_ManipulationTests\";
 
-                string reason = "Firma Di Prova";
+                string reason = "Sign Reason Placeholder";
                 string location = "Italia, Firenze";
                 string signer = "Luca Bianchi";
 
@@ -402,29 +402,35 @@ namespace TestPDFSharpSignatures
 
         void InsertSignature(out DigitalSignatureOptions? options, PdfAcroForm formFields, SigCtl sigCtl, int pageSign_index, ref string signTargetPath, string signer, string location, string reason)
         {
+            options = null;
 
-            PdfAcroField? testSignField = formFields.Fields[_signPlaceholderForm];
-            if (testSignField == null)
+            try
             {
-                options = null;
-                return;
+                PdfAcroField? testSignField = formFields.Fields[_signPlaceholderForm];
+                if (testSignField == null)
+                {
+                    return;
+                }
+
+                PdfRectangle rectSign = testSignField.Elements.GetRectangle(PdfAnnotation.Keys.Rect);
+                XRect locationFinalSign = rectSign.ToXRect();
+
+                ActivateWacom(sigCtl, ref signTargetPath, signer, reason);
+                options = new DigitalSignatureOptions
+                {
+                    ContactInfo = signer,
+                    Location = location,
+                    Reason = reason,
+                    Rectangle = new XRect(locationFinalSign.Location.X, locationFinalSign.Location.Y, 150d, 100d),
+                    AppearanceHandler = new SignatureAppearanceHandler(signTargetPath, signer, location, _font),
+                    AppName = _appName,
+                    PageIndex = pageSign_index
+                };
             }
-
-            PdfRectangle rectSign = testSignField.Elements.GetRectangle(PdfAnnotation.Keys.Rect);
-            XRect locationFinalSign = rectSign.ToXRect();
-
-            ActivateWacom(sigCtl, ref signTargetPath, signer, reason);
-            options = new DigitalSignatureOptions
+            catch
             {
-                ContactInfo = signer,
-                Location = location,
-                Reason = reason,
-                Rectangle = new XRect(locationFinalSign.Location.X, locationFinalSign.Location.Y, 150d, 100d),
-                AppearanceHandler = new SignatureAppearanceHandler(signTargetPath, signer, location, _font),
-                AppName = _appName,
-                PageIndex = pageSign_index
-            };
-        }
 
+            }
+        }
     }
 }
