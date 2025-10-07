@@ -372,29 +372,29 @@ namespace TestPDFSharpSignatures
             return null;
         }
 
-        void InsertTextWhereIsForm(PdfDocument document, PdfAcroForm formFields, int pageName_index, string field, string text)
+        void InsertTextWhereIsForm(PdfDocument document, PdfAcroForm formFields, int page_index, string field, string text)
         {
             try
             {
 
-                PdfAcroField? nameField = formFields.Fields[field];
-                if (nameField == null) return;
+                PdfAcroField? foundField = formFields.Fields[field];
+                if (foundField == null) return;
 
-                var nameFormPage = document.Pages[pageName_index];
+                var fieldFormPage = document.Pages[page_index];
 
                 var font = new XFont(_font, 14d);
-                XGraphics gfx = XGraphics.FromPdfPage(nameFormPage);
+                XGraphics gfx = XGraphics.FromPdfPage(fieldFormPage);
                 var textFormatter = new XTextFormatter(gfx);
 
-                PdfRectangle rectName = nameField.Elements.GetRectangle(PdfAnnotation.Keys.Rect);
-                XRect locationFinalName = rectName.ToXRect();
+                PdfRectangle rectForm = foundField.Elements.GetRectangle(PdfAnnotation.Keys.Rect);
+                XRect locationFormField = rectForm.ToXRect();
 
                 // Text has pivot inverted
-                double invertedY = nameFormPage.Height.Point - locationFinalName.Y - locationFinalName.Height;
-                XRect adjustedNameRect = new XRect(locationFinalName.X, invertedY, locationFinalName.Width, locationFinalName.Height);
+                double invertedY = fieldFormPage.Height.Point - locationFormField.Y - locationFormField.Height;
+                XRect adjustedFormFieldRect = new XRect(locationFormField.X, invertedY, locationFormField.Width, locationFormField.Height);
 
                 //gfx.DrawRectangle(XPens.Red, adjustedNameRect);
-                textFormatter.DrawString(text, font, XBrushes.Black, adjustedNameRect, XStringFormats.TopLeft);
+                textFormatter.DrawString(text, font, XBrushes.Black, adjustedFormFieldRect, XStringFormats.TopLeft);
                 gfx.Dispose();
             }
             catch
