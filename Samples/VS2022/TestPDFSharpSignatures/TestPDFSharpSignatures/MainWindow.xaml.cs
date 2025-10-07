@@ -175,8 +175,6 @@ namespace TestPDFSharpSignatures
                 //string pfxPassword = "password123";
 
 
-
-
                 // Open current user store
                 var store = new System.Security.Cryptography.X509Certificates.X509Store(
                         System.Security.Cryptography.X509Certificates.StoreName.My,
@@ -194,23 +192,28 @@ namespace TestPDFSharpSignatures
                 if (certs.Count == 0)
                     throw new System.Exception($"Certificato con subject '{_subjectName}' non trovato.");
 
-                // Prendi il primo certificato trovato
-                // ATTENZIONE: In caso di certificati con lo stesso nome, con magari alcuni scaduti, ne va preso uno valido.
-                var cert = certs[0];
 
-
-                // I campi NotBefore e NotAfter nei certificati sono sempre espressi in UTC secondo lo standard X.509
+                X509Certificate2? validCertFound = null;
                 DateTime now = DateTime.UtcNow;
-                if (now > cert.NotAfter.ToUniversalTime())
+                foreach (X509Certificate2? certificate in certs)
                 {
-                    throw new System.Exception($"Certificato con subject '{_subjectName}' scaduto.");
+                    if (certificate == null) continue;
+
+                    // I campi NotBefore e NotAfter nei certificati sono sempre espressi in UTC secondo lo standard X.509
+                    if (now >= certificate.NotBefore.ToUniversalTime() && now <= certificate.NotAfter.ToUniversalTime() && certificate.HasPrivateKey)
+                    {
+                        validCertFound = certificate;
+                        break;
+                    }
                 }
 
-                if (!cert.HasPrivateKey)
-                    throw new System.Exception("Il certificato non contiene la chiave privata.");
+                if (validCertFound == null)
+                {
+                    throw new System.Exception("No valid certificates found. Check expiration data or key");
+                }
 
                 var chain = new X509Chain();
-                chain.Build(cert);
+                chain.Build(validCertFound);
                 var chainCerts = new X509Certificate2Collection();
                 foreach (var element in chain.ChainElements)
                 {
@@ -265,7 +268,7 @@ namespace TestPDFSharpSignatures
                         document.SecuritySettings.PermitAnnotations = false;
 
 
-                        var pdfSignatureHandler = DigitalSignatureHandler.ForDocument(document, new BouncyCastleSigner((cert, chainCerts), PdfMessageDigestType.SHA256), options);
+                        var pdfSignatureHandler = DigitalSignatureHandler.ForDocument(document, new BouncyCastleSigner((validCertFound, chainCerts), PdfMessageDigestType.SHA256), options);
                         string resultPDF = outputPath + $"{signer.Replace(" ", "")}_{reason.Replace(" ", "")}.pdf";
 
                         document.Save(resultPDF);
