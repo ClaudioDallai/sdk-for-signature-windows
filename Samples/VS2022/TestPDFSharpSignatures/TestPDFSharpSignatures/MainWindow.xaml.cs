@@ -238,7 +238,7 @@ namespace TestPDFSharpSignatures
                 int? pageName_index = GetPageIndexOfField(document, _nameSurnameForm);
                 if (pageName_index.HasValue)
                 {
-                    InsertTextWhereIsForm(document, formFields, pageName_index.Value, _nameSurnameForm, signer);
+                    InsertTextWhereFormIs(document, formFields, pageName_index.Value, _nameSurnameForm, signer);
                 }
 
                 // Date and place
@@ -246,7 +246,7 @@ namespace TestPDFSharpSignatures
                 int? pageDate_index = GetPageIndexOfField(document, _currentDateForm);
                 if (pageDate_index.HasValue)
                 {
-                    InsertTextWhereIsForm(document, formFields, pageDate_index.Value, _currentDateForm, dateAndPlace);
+                    InsertTextWhereFormIs(document, formFields, pageDate_index.Value, _currentDateForm, dateAndPlace);
                 }
 
                 // Sign
@@ -377,7 +377,7 @@ namespace TestPDFSharpSignatures
             return null;
         }
 
-        void InsertTextWhereIsForm(PdfDocument document, PdfAcroForm formFields, int page_index, string field, string text)
+        void InsertTextWhereFormIs(PdfDocument document, PdfAcroForm formFields, int page_index, string field, string text)
         {
             try
             {
