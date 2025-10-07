@@ -72,9 +72,14 @@ namespace TestPDFSharpSignatures
                 //string inputPdf = @"C:\Users\visio\Desktop\PDF_ManipulationTests\LoremIpsumMultiForms.pdf";
                 string outputPath = @"C:\Users\visio\Desktop\PDF_ManipulationTests\";
 
+                // These will be paramethric
                 string reason = "Sign Reason Placeholder";
                 string location = "Italia, Firenze";
-                string signer = "Luca Bianchi";
+                string signerName = "Luca";
+                string signerSurname = "Bianchi";
+
+
+                string signer = signerName + " " + signerSurname;
 
 
                 // Not used anymore
