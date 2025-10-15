@@ -9,30 +9,21 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <COMReference Include="FlSigCaptLib">
-      <VersionMinor>0</VersionMinor>
-      <VersionMajor>1</VersionMajor>
-      <Guid>a3a5c7d3-0d07-40f6-905f-b0c501538cb6</Guid>
-      <Lcid>0</Lcid>
-      <WrapperTool>tlbimp</WrapperTool>
-      <Isolated>false</Isolated>
-      <EmbedInteropTypes>true</EmbedInteropTypes>
-    </COMReference>
-    <COMReference Include="FLSIGCTLLib">
-      <VersionMinor>0</VersionMinor>
-      <VersionMajor>1</VersionMajor>
-      <Guid>b0452e4e-db2a-472d-91ea-9f77c9885a39</Guid>
-      <Lcid>0</Lcid>
-      <WrapperTool>tlbimp</WrapperTool>
-      <Isolated>false</Isolated>
-      <EmbedInteropTypes>true</EmbedInteropTypes>
-    </COMReference>
-  </ItemGroup>
-
-  <ItemGroup>
     <PackageReference Include="BouncyCastle.Cryptography" Version="2.6.2" />
     <PackageReference Include="PDFsharp-WPF" Version="6.2.2" />
     <PackageReference Include="System.Security.Cryptography.Pkcs" Version="9.0.9" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="FLSIGCTLLib">
+      <HintPath>Setup\FLSIGCTLLib.dll</HintPath>
+    </Reference>
+    <Reference Include="Interop.FlSigCapt">
+      <HintPath>..\Interop.FlSigCapt.dll</HintPath>
+    </Reference>
+    <Reference Include="Interop.FlSigCOM">
+      <HintPath>..\Interop.FlSigCOM.dll</HintPath>
+    </Reference>
   </ItemGroup>
 
 </Project>

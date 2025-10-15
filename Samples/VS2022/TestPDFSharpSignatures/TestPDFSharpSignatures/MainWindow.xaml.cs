@@ -1,6 +1,7 @@
 ﻿
 // Wacom Ink sdk
-using FlSigCaptLib;
+//using Interop.FlSigCOM; DO NOT NEED THIS
+using Interop.FlSigCapt;
 using FLSIGCTLLib;
 
 // Crypto and signing
@@ -59,7 +60,12 @@ namespace TestPDFSharpSignatures
 
             try
             {
-
+                string[] args = Environment.GetCommandLineArgs();
+                //Console.WriteLine($"Args count: {args.Length}");
+                //for (int i = 0; i < args.Length; i++)
+                //{
+                //    Console.WriteLine($"Arg[{i}] = '{args[i]}'");
+                //}
 
                 String signTargetPath = "";
 
@@ -73,11 +79,26 @@ namespace TestPDFSharpSignatures
                 string outputPath = @"C:\Users\visio\Desktop\PDF_ManipulationTests\";
 
                 // These will be paramethric
-                string reason = "Sign Reason Placeholder";
-                string location = "Italia, Firenze";
-                string signerName = "Luca";
-                string signerSurname = "Bianchi";
+                string reason = "";
+                string location = "";
+                string signerName = "";
+                string signerSurname = "";
 
+                if (args.Length <= 0)
+                {
+                    reason = "Sign Reason Placeholder";
+                    location = "Italia, Firenze";
+                    signerName = "Luca";
+                    signerSurname = "Bianchi";
+                }
+                else
+                {
+                    // First [0] is exe path
+                    reason = args[1];
+                    location = args[2];
+                    signerName = args[3];
+                    signerSurname = args[4];
+                }
 
                 string signer = signerName + " " + signerSurname;
 
@@ -293,7 +314,7 @@ namespace TestPDFSharpSignatures
 
         public void ActivateWacom(SigCtl sigCtl, ref string signTargetPath, string signer, string reason)
         {
-            DynamicCapture dc = new FlSigCaptLib.DynamicCapture();
+            DynamicCapture dc = new Interop.FlSigCapt.DynamicCapture();
             DynamicCaptureResult res = dc.Capture(sigCtl, signer, reason, null, null);
             if (res == DynamicCaptureResult.DynCaptOK)
             {

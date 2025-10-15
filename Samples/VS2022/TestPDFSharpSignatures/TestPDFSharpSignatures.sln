@@ -1,9 +1,11 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
-VisualStudioVersion = 17.14.36511.14 d17.14
+VisualStudioVersion = 17.14.36511.14
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TestPDFSharpSignatures", "TestPDFSharpSignatures\TestPDFSharpSignatures.csproj", "{0C325081-6B8B-4E77-84C9-6E90F31BFAA6}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MainAPP_Framework", "MainAPP_Framework\MainAPP_Framework.csproj", "{8A479C92-884E-42F1-88F3-74A46E0215E6}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -15,6 +17,10 @@ Global
 		{0C325081-6B8B-4E77-84C9-6E90F31BFAA6}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{0C325081-6B8B-4E77-84C9-6E90F31BFAA6}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{0C325081-6B8B-4E77-84C9-6E90F31BFAA6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8A479C92-884E-42F1-88F3-74A46E0215E6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8A479C92-884E-42F1-88F3-74A46E0215E6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8A479C92-884E-42F1-88F3-74A46E0215E6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8A479C92-884E-42F1-88F3-74A46E0215E6}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
