@@ -10,10 +10,19 @@ using static System.Net.Mime.MediaTypeNames;
 
 namespace UtilityWordLib
 {
+    public struct SignLocationInfo
+    {
+        public float Left;
+        public float Top;
+        public int Page;
+    }
+
     public class WordProcessor
     {
-        public void FillTemplate(string inPath, string outPath, Dictionary<string, string> replacements)
+        public SignLocationInfo FillTemplate(string inPath, string outPath, Dictionary<string, string> replacements)
         {
+            SignLocationInfo info = new SignLocationInfo();
+
             var app = new Microsoft.Office.Interop.Word.Application();
             Document doc = null;
             try
@@ -31,7 +40,15 @@ namespace UtilityWordLib
                         find.Replacement.ClearFormatting();
                         find.Replacement.Text = pair.Value;
 
-                        find.Execute(Replace: WdReplace.wdReplaceAll);
+                        if(find.Execute(Replace: WdReplace.wdReplaceAll))
+                        {
+                            if (pair.Key == "{{{FIRMA}}}")
+                            {
+                                info.Left = (float)rng.Information[WdInformation.wdHorizontalPositionRelativeToPage];
+                                info.Top = (float)rng.Information[WdInformation.wdVerticalPositionRelativeToPage];
+                                info.Page = (int)rng.Information[WdInformation.wdActiveEndPageNumber];
+                            }
+                        }
                     }
                 }
 
@@ -41,7 +58,10 @@ namespace UtilityWordLib
             {
                 doc?.Close(false);
                 app.Quit(false);
+
             }
+
+            return info;
         }
 
         public void ConvertToPdf(string wordPath, string pdfPath)

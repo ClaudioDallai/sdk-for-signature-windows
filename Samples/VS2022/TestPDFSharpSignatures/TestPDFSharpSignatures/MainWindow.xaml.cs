@@ -106,16 +106,12 @@ namespace TestPDFSharpSignatures
                 }
 
                 string signer = signerName + " " + signerSurname;
-
-                if (!File.Exists(inputTemplateWord))
-                {
-                    throw new FileNotFoundException($"Il file specificato non esiste: {inputTemplateWord}");
-                }
+                SignLocationInfo signInfo = new SignLocationInfo();
 
                 if (File.Exists(inputTemplateWord))
                 {
                     WordProcessor utWord = new WordProcessor();
-                    utWord.FillTemplate(inputTemplateWord, inputFilledTemplateWord, new Dictionary<string, string> { { _nameMarker, signer } });
+                    signInfo = utWord.FillTemplate(inputTemplateWord, inputFilledTemplateWord, new Dictionary<string, string> { { _nameMarker, signer }, { _signMarker, "" } });
                     utWord.ConvertToPdf(inputFilledTemplateWord, outputFilledTemplatePathNoSign);
                 }
 
@@ -180,8 +176,8 @@ namespace TestPDFSharpSignatures
 
 
                 // PDFSharp has lots of problem in recognizing metadata of acroforms, better to use texts and use AcroForms just as placeholders to get location.
-                PdfDocument document = PdfReader.Open(inputPdf, PdfDocumentOpenMode.Modify);
-                PdfAcroForm formFields = document.AcroForm;
+                PdfDocument document = PdfReader.Open(outputFilledTemplatePathNoSign, PdfDocumentOpenMode.Modify);
+                //PdfAcroForm formFields = document.AcroForm;
 
 
                 //// Name and Surname
@@ -205,7 +201,9 @@ namespace TestPDFSharpSignatures
                 if (true)
                 {
                     //InsertSignature(out DigitalSignatureOptions? options, formFields, sigCtl, pageSign_index.Value, ref signTargetPath, signer, location, reason);
-                    InsertSignature(out DigitalSignatureOptions? options, formFields, sigCtl, 1, ref signTargetPath, signer, location, reason);
+                    //InsertSignature(out DigitalSignatureOptions? options, formFields, sigCtl, 1, ref signTargetPath, signer, location, reason);
+
+                    InsertSignatureWordMarker(out DigitalSignatureOptions? options, signInfo, sigCtl, document, ref signTargetPath, signer, location, reason);
 
                     if (options != null)
                     {
@@ -384,6 +382,43 @@ namespace TestPDFSharpSignatures
             catch
             {
 
+            }
+        }
+
+        void InsertSignatureWordMarker(out DigitalSignatureOptions? options, SignLocationInfo signInfo, SigCtl sigCtl, PdfDocument pdfDoc, ref string signTargetPath, string signer, string location, string reason)
+        {
+            options = null;
+
+            try
+            {
+                if (signInfo.Page <= 0 || pdfDoc == null) return;
+
+                PdfPage pdfPage = pdfDoc.Pages[signInfo.Page - 1];
+
+                double pageHeight = pdfPage.Height.Point;
+                double pdfX = signInfo.Left;
+                double pdfY = pageHeight - signInfo.Top;
+
+                double width = 150;
+                double height = 100;
+
+                XRect signatureRect = new XRect(pdfX, pdfY - height, width, height);
+
+                ActivateWacom(sigCtl, ref signTargetPath, signer, reason);
+
+                options = new DigitalSignatureOptions
+                {
+                    ContactInfo = signer,
+                    Location = location,
+                    Reason = reason,
+                    Rectangle = signatureRect,
+                    AppearanceHandler = new SignatureAppearanceHandler(signTargetPath, signer, location, _font),
+                    AppName = _appName,
+                    PageIndex = signInfo.Page - 1
+                };
+            }
+            catch
+            {
             }
         }
 
