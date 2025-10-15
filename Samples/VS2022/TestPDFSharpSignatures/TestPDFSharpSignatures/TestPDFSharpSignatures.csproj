@@ -11,7 +11,7 @@
   <ItemGroup>
     <PackageReference Include="BouncyCastle.Cryptography" Version="2.6.2" />
     <PackageReference Include="PDFsharp-WPF" Version="6.2.2" />
-    <PackageReference Include="System.Security.Cryptography.Pkcs" Version="9.0.9" />
+    <PackageReference Include="System.Security.Cryptography.Pkcs" Version="9.0.10" />
   </ItemGroup>
 
   <ItemGroup>
@@ -23,6 +23,9 @@
     </Reference>
     <Reference Include="Interop.FlSigCOM">
       <HintPath>..\Interop.FlSigCOM.dll</HintPath>
+    </Reference>
+    <Reference Include="UtilityWordLib">
+      <HintPath>..\UtilityWordLib\bin\Debug\UtilityWordLib.dll</HintPath>
     </Reference>
   </ItemGroup>
 

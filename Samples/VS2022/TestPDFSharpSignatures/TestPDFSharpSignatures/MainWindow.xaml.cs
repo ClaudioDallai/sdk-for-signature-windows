@@ -1,13 +1,8 @@
 ﻿
 // Wacom Ink sdk
 //using Interop.FlSigCOM; DO NOT NEED THIS
-using Interop.FlSigCapt;
 using FLSIGCTLLib;
-
-// Crypto and signing
-using PdfSharp.Pdf.Security;
-using PdfSharp.Pdf.Signatures;
-using System.Security.Cryptography.X509Certificates;
+using Interop.FlSigCapt;
 
 // PDF related
 using PdfSharp.Drawing;
@@ -16,14 +11,19 @@ using PdfSharp.Pdf;
 using PdfSharp.Pdf.AcroForms;
 using PdfSharp.Pdf.Annotations;
 using PdfSharp.Pdf.IO;
-using PdfSharp.Snippets.Pdf;
+using UtilityWordLib;
 
+// Crypto and signing
+using PdfSharp.Pdf.Security;
+using PdfSharp.Pdf.Signatures;
+using PdfSharp.Snippets.Pdf;
 // System
 using System.IO;
+using System.Security.Cryptography.X509Certificates;
 using System.Windows;
 using System.Windows.Media.Imaging;
 
-
+// provare a creare interop da .COM dll di Word 16. Altrimenti non builda l'exe in NET8. Il nuget non è più supportato!!!
 
 /*
  Libraries and technologies used:
@@ -40,14 +40,18 @@ namespace TestPDFSharpSignatures
     /// <summary>
     /// Interaction logic for MainWindow.xaml
     /// </summary>
-    public partial class MainWindow : Window
+    public partial class MainWindow : System.Windows.Window
     {
         private readonly string _sdkLicenseKey = "eyJhbGciOiJSUzUxMiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiI3YmM5Y2IxYWIxMGE0NmUxODI2N2E5MTJkYTA2ZTI3NiIsImV4cCI6MjE0NzQ4MzY0NywiaWF0IjoxNTYwOTUwMjcyLCJyaWdodHMiOlsiU0lHX1NES19DT1JFIiwiU0lHQ0FQVFhfQUNDRVNTIl0sImRldmljZXMiOlsiV0FDT01fQU5ZIl0sInR5cGUiOiJwcm9kIiwibGljX25hbWUiOiJTaWduYXR1cmUgU0RLIiwid2Fjb21faWQiOiI3YmM5Y2IxYWIxMGE0NmUxODI2N2E5MTJkYTA2ZTI3NiIsImxpY191aWQiOiJiODUyM2ViYi0xOGI3LTQ3OGEtYTlkZS04NDlmZTIyNmIwMDIiLCJhcHBzX3dpbmRvd3MiOltdLCJhcHBzX2lvcyI6W10sImFwcHNfYW5kcm9pZCI6W10sIm1hY2hpbmVfaWRzIjpbXX0.ONy3iYQ7lC6rQhou7rz4iJT_OJ20087gWz7GtCgYX3uNtKjmnEaNuP3QkjgxOK_vgOrTdwzD-nm-ysiTDs2GcPlOdUPErSp_bcX8kFBZVmGLyJtmeInAW6HuSp2-57ngoGFivTH_l1kkQ1KMvzDKHJbRglsPpd4nVHhx9WkvqczXyogldygvl0LRidyPOsS5H2GYmaPiyIp9In6meqeNQ1n9zkxSHo7B11mp_WXJXl0k1pek7py8XYCedCNW5qnLi4UCNlfTd6Mk9qz31arsiWsesPeR9PN121LBJtiPi023yQU8mgb9piw_a-ccciviJuNsEuRDN3sGnqONG3dMSA";
         private readonly string _font = "Arial";
-        private readonly string _nameSurnameForm = "Name_Surname_Form";
+        //private readonly string _nameSurnameForm = "Name_Surname_Form";
         private readonly string _signPlaceholderForm = "Sign_Placeholder_Form";
-        private readonly string _currentDateForm = "Current_Date_Form";
-        private readonly string _appName = " [Sign_It] -> Wacom STU-430";
+        //private readonly string _currentDateForm = "Current_Date_Form";
+        private readonly string _appName = " [Sign_It+] -> Wacom STU-430";
+
+        private readonly string _nameMarker = "{{{NOME_COGNOME}}}";
+        private readonly string _placeMarker = "{{{LUOGO_DATA}}}";
+        private readonly string _signMarker = "{{{FIRMA}}}";
 
         // Certificate subject name
         private readonly string _subjectName = "FirmaDemo";
@@ -61,17 +65,18 @@ namespace TestPDFSharpSignatures
             try
             {
                 string[] args = Environment.GetCommandLineArgs();
-                //Console.WriteLine($"Args count: {args.Length}");
-                //for (int i = 0; i < args.Length; i++)
-                //{
-                //    Console.WriteLine($"Arg[{i}] = '{args[i]}'");
-                //}
-
                 String signTargetPath = "";
 
                 //print("btnSign was pressed");
                 SigCtl sigCtl = new SigCtl();
                 sigCtl.Licence = _sdkLicenseKey;
+
+
+                string inputTemplateWord = @"C:\Users\visio\Desktop\PDF_ManipulationTests\Liberatoria Slide_Provider_Ok.docx";
+                string inputFilledTemplateWord = @"C:\Users\visio\Desktop\PDF_ManipulationTests\Liberatoria Slide_Provider_Ok_Filled.docx";
+
+                string outputFilledTemplatePathNoSign = @"C:\Users\visio\Desktop\PDF_ManipulationTests\Liberatoria Slide_Provider_Ok_Filled_NoSign.pdf";
+
 
                 string inputPdf = @"C:\Users\visio\Desktop\PDF_ManipulationTests\ModelloAutorizzazioneTrattamentoDatiForm.pdf";
                 //string inputPdf = @"C:\Users\visio\Desktop\PDF_ManipulationTests\LoremIpsumRightForms.pdf";
@@ -84,7 +89,7 @@ namespace TestPDFSharpSignatures
                 string signerName = "";
                 string signerSurname = "";
 
-                if (args.Length <= 0)
+                if (args.Length <= 1)
                 {
                     reason = "Sign Reason Placeholder";
                     location = "Italia, Firenze";
@@ -102,93 +107,17 @@ namespace TestPDFSharpSignatures
 
                 string signer = signerName + " " + signerSurname;
 
+                if (!File.Exists(inputTemplateWord))
+                {
+                    throw new FileNotFoundException($"Il file specificato non esiste: {inputTemplateWord}");
+                }
 
-                // Not used anymore
-                #region PdfPig
-
-
-                //// Use PdfPig to interrogate the PDF and rtreive infos about sign slot locations
-                //int signTargetPage = -1;
-
-                //Dictionary<int, List<System.Windows.Vector>> markerPositions = new Dictionary<int, List<System.Windows.Vector>>();
-
-                //using (UglyToad.PdfPig.PdfDocument documentPig = UglyToad.PdfPig.PdfDocument.Open(inputPdf))
-                //{
-                //    foreach (var page in documentPig.GetPages())
-                //    {
-                //        foreach (var word in page.GetWords())
-                //        {
-                //            if (word.Text.Contains(marker_sign))
-                //            {
-                //                signTargetPage = page.Number;
-
-                //                if (markerPositions.ContainsKey(signTargetPage))
-                //                {
-                //                    if (word.BoundingBox.Left > page.Width * 0.5)
-                //                    {
-                //                        markerPositions[signTargetPage].Add(new System.Windows.Vector(word.BoundingBox.Left - 25, word.BoundingBox.Top));
-                //                    }
-                //                    else
-                //                    {
-                //                        markerPositions[signTargetPage].Add(new System.Windows.Vector(word.BoundingBox.Left, word.BoundingBox.Top));
-                //                    }
-                //                }
-                //                else
-                //                {
-                //                    if (word.BoundingBox.Left > page.Width * 0.5)
-                //                    {
-                //                        markerPositions.Add(signTargetPage, new List<System.Windows.Vector> { new System.Windows.Vector(word.BoundingBox.Left - 25, word.BoundingBox.Top) });
-                //                    }
-                //                    else
-                //                    {
-                //                        markerPositions.Add(signTargetPage, new List<System.Windows.Vector> { new System.Windows.Vector(word.BoundingBox.Left, word.BoundingBox.Top) });
-                //                    }
-                //                }
-                //            }
-                //        }
-                //    }
-
-                //    // PDFPig counts from page 1.
-                //    HashSet<int> invalidKeys = new HashSet<int>();
-                //    foreach (KeyValuePair<int, List<System.Windows.Vector>> pair in markerPositions)
-                //    {
-                //        if (pair.Key <= 0 || pair.Key > documentPig.NumberOfPages)
-                //        {
-                //            invalidKeys.Add(pair.Key);
-                //        }
-                //    }
-
-                //    foreach (int invKey in invalidKeys)
-                //    {
-                //        if (markerPositions.ContainsKey(invKey))
-                //        {
-                //            markerPositions.Remove(invKey);
-                //        }
-                //    }
-                //}
-
-                //using (UglyToad.PdfPig.PdfDocument documentPig = UglyToad.PdfPig.PdfDocument.Open(inputPdf))
-                //{
-                //    documentPig.TryGetForm(out var form);
-                //    if (form == null)
-                //    {
-                //        Console.WriteLine("Nessun AcroForm trovato.");
-                //        return;
-                //    }
-
-                //    foreach (var field in form.Fields)
-                //    {
-                //        if (field == null) continue;
-                //        if (field.Information.PartialName == _signPlaceholderForm)
-                //        {
-
-                //            markerPositions.Add(1, new List<System.Windows.Vector> { new System.Windows.Vector(field.Bounds.Value.Left, field.Bounds.Value.Right - 200d) });
-                //        }
-                //    }
-                //}
-
-
-                #endregion
+                if (File.Exists(inputTemplateWord))
+                {
+                    WordProcessor utWord = new WordProcessor();
+                    utWord.FillTemplate(inputTemplateWord, inputFilledTemplateWord, new Dictionary<string, string> { { _nameMarker, signer } });
+                    utWord.ConvertToPdf(inputFilledTemplateWord, outputFilledTemplatePathNoSign);
+                }
 
 
                 #region Certificate
@@ -255,26 +184,28 @@ namespace TestPDFSharpSignatures
                 PdfAcroForm formFields = document.AcroForm;
 
 
-                // Name and Surname
-                int? pageName_index = GetPageIndexOfField(document, _nameSurnameForm);
-                if (pageName_index.HasValue)
-                {
-                    InsertTextWhereFormIs(document, formFields, pageName_index.Value, _nameSurnameForm, signer);
-                }
+                //// Name and Surname
+                //int? pageName_index = GetPageIndexOfField(document, _nameSurnameForm);
+                //if (pageName_index.HasValue)
+                //{
+                //    InsertTextWhereFormIs(document, formFields, pageName_index.Value, _nameSurnameForm, signer);
+                //}
 
-                // Date and place
-                string dateAndPlace = location + "," + $" {DateTime.Now.ToString("dd/MM/yyyy")}";
-                int? pageDate_index = GetPageIndexOfField(document, _currentDateForm);
-                if (pageDate_index.HasValue)
-                {
-                    InsertTextWhereFormIs(document, formFields, pageDate_index.Value, _currentDateForm, dateAndPlace);
-                }
+                //// Date and place
+                //string dateAndPlace = location + "," + $" {DateTime.Now.ToString("dd/MM/yyyy")}";
+                //int? pageDate_index = GetPageIndexOfField(document, _currentDateForm);
+                //if (pageDate_index.HasValue)
+                //{
+                //    InsertTextWhereFormIs(document, formFields, pageDate_index.Value, _currentDateForm, dateAndPlace);
+                //}
 
                 // Sign
-                int? pageSign_index = GetPageIndexOfField(document, _signPlaceholderForm);
-                if (pageSign_index.HasValue)
+                //int? pageSign_index = GetPageIndexOfField(document, _signPlaceholderForm);
+                //if (pageSign_index.HasValue)
+                if (true)
                 {
-                    InsertSignature(out DigitalSignatureOptions? options, formFields, sigCtl, pageSign_index.Value, ref signTargetPath, signer, location, reason);
+                    //InsertSignature(out DigitalSignatureOptions? options, formFields, sigCtl, pageSign_index.Value, ref signTargetPath, signer, location, reason);
+                    InsertSignature(out DigitalSignatureOptions? options, formFields, sigCtl, 1, ref signTargetPath, signer, location, reason);
 
                     if (options != null)
                     {
@@ -309,7 +240,7 @@ namespace TestPDFSharpSignatures
             }
 
 
-            Application.Current.Shutdown();
+            System.Windows.Application.Current.Shutdown();
         }
 
         public void ActivateWacom(SigCtl sigCtl, ref string signTargetPath, string signer, string reason)
@@ -325,12 +256,6 @@ namespace TestPDFSharpSignatures
                 //var testRead = sigObj.ExtraData["AdditionalData"]; // Works
 
                 String dateStr = DateTime.Now.ToString("hhmmss");
-
-                string folderPath = @"C:\temp";
-                if (!Directory.Exists(folderPath))
-                {
-                    Directory.CreateDirectory(folderPath);
-                }
 
                 signTargetPath = @"C:\Users\visio\Desktop\PDF_ManipulationTests\Signs\" + dateStr + ".png";
                 //print("Outputting to file " + signTargetPath);
@@ -461,5 +386,6 @@ namespace TestPDFSharpSignatures
 
             }
         }
+
     }
 }

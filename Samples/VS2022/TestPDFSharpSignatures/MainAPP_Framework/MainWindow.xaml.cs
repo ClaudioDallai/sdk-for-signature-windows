@@ -45,9 +45,9 @@ namespace MainAPP_Framework
                 FileName = SignModuleExePath,
                 Arguments = arguments,
                 UseShellExecute = false,
-                //RedirectStandardOutput = true,
-                //RedirectStandardError = true,
-                CreateNoWindow = false
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                CreateNoWindow = true
             };
 
             Process.Start(psi);
