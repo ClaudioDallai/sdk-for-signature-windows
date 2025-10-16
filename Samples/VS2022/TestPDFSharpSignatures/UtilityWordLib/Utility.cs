@@ -64,6 +64,7 @@ namespace UtilityWordLib
         /// <param name="markersInfo"> Dict containing markers position datas. Beware if multiple same markers, only the first one will be returned </param>
         /// <param name="replacements"> Text markers replacements </param>
         /// <param name="inPath"> Docx template to fill </param>
+        /// <param name="getTextMarkerPositions"> If true add to out dictionarsies all positions of found markers (relatice to theri anchors). Even if false it replaces occurences in text </param>
         /// <param name="checkShapesText"> If true iterate through all shapes to check AlternativeTexts and retreive all (of the ones matching text) positions </param>
         /// <param name="outPath"> Output docx </param>
         public static void FillTemplate(out Dictionary<string, MarkerFoundLocationinfo> markersInfo, Dictionary<string, string> replacements, string inPath, string outPath, bool getTextMarkerPositions = false, bool checkShapesText = false)
