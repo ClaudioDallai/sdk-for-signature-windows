@@ -83,11 +83,11 @@ namespace TestPDFSharpSignatures
 
                 if (args.Length <= 1)
                 {
-                    reason = "Sign Reason Placeholder";
+                    reason = "Default Reason Placeholder";
                     location = "Italia, Firenze";
                     signerName = "Luca";
                     signerSurname = "Bianchi";
-                    consens = "acconsente";
+                    consens = "non acconsente";
                 }
                 else
                 {
@@ -98,6 +98,7 @@ namespace TestPDFSharpSignatures
                     signerSurname = args[4];
                     consens = args[5];
                 }
+
                 string locationDate = location + " " + DateTime.Now.ToString("yyyyMMddHHmmss");
                 string signer = signerName + " " + signerSurname;
 
@@ -109,9 +110,10 @@ namespace TestPDFSharpSignatures
                 }
 
                 WordProcessor.FillTemplate(out Dictionary<string, MarkerFoundLocationinfo> signLocationInfos,
-                                           new Dictionary<string, string> { { _nameMarker, signer }, { _signMarker, _signMarker }, { _placeMarker, locationDate }, { _consentMarker, consens } },
+                                           new Dictionary<string, string> { { _nameMarker, signer }, { _signMarker, "" }, { _placeMarker, locationDate }, { _consentMarker, consens } },
                                            _inputTemplateWord,
-                                           _inputFilledTemplateWord);
+                                           _inputFilledTemplateWord, 
+                                           true);
 
                 WordProcessor.ConvertToPdf(_inputFilledTemplateWord, _outputFilledTemplatePathNoSign);
 
@@ -295,6 +297,7 @@ namespace TestPDFSharpSignatures
 
                 double pageHeight = pdfPage.Height.Point;
 
+                // Origin is different (PDFSharp starts low sx corner, Word starts high left corner)
                 double pdfX = signInfo.Left;
                 double pdfY = pageHeight - signInfo.Top;
 

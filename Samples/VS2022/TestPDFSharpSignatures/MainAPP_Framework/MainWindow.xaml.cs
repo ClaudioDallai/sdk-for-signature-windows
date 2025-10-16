@@ -32,8 +32,8 @@ namespace MainAPP_Framework
 
             string[] args = new string[]
             {
-                "Sign Reason Crazy Placeholder",
-                "Quasi Italia, Napoli",
+                "Sign Reason Placeholder",
+                "Italia, Napoli",
                 "Tommasino",
                 "Verdi",
                 "acconsente"

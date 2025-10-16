@@ -64,8 +64,9 @@ namespace UtilityWordLib
         /// <param name="markersInfo"> Dict containing markers position datas. Beware if multiple same markers, only the first one will be returned </param>
         /// <param name="replacements"> Text markers replacements </param>
         /// <param name="inPath"> Docx template to fill </param>
+        /// <param name="checkShapesText"> If true iterate through all shapes to check AlternativeTexts and retreive all (of the ones matching text) positions </param>
         /// <param name="outPath"> Output docx </param>
-        public static void FillTemplate(out Dictionary<string, MarkerFoundLocationinfo> markersInfo, Dictionary<string, string> replacements, string inPath, string outPath)
+        public static void FillTemplate(out Dictionary<string, MarkerFoundLocationinfo> markersInfo, Dictionary<string, string> replacements, string inPath, string outPath, bool checkShapesText = false)
         {
             markersInfo = new Dictionary<string, MarkerFoundLocationinfo>();
 
@@ -79,8 +80,9 @@ namespace UtilityWordLib
 
                 foreach (var pair in replacements)
                 {
-                    bool found = false;
+                    bool foundTextOccurence = false;
 
+                    // Searh for texts markers
                     // First occurence to get position before it gets invalidated
                     foreach (Range storyRange in doc.StoryRanges)
                     {
@@ -102,13 +104,14 @@ namespace UtilityWordLib
                                     Top = (float)searchRange.Information[WdInformation.wdVerticalPositionRelativeToPage],
                                     Page = (int)searchRange.Information[WdInformation.wdActiveEndPageNumber]
                                 });
-                                found = true;
+
+                                foundTextOccurence = true;
                                 break;
                             }
                         }
                     }
 
-                    if (found)
+                    if (foundTextOccurence)
                     {
                         foreach (Range storyRange in doc.StoryRanges)
                         {
@@ -124,13 +127,15 @@ namespace UtilityWordLib
                         }
                     }
 
+                    // If flag is true, check for all AlternativeTexts inside Shapes, to find coordinates
+                    // While this is a different operation, and a standalone method could exists, this is an heavy operation, so we call it here if necessary
+                    if (!checkShapesText) continue;
+
+                    // Searh for AlternativeTexts markers inside shapes
                     foreach (Shape shape in doc.Shapes)
                     {
                         if (shape.AlternativeText == pair.Key)
                         {
-                            float left = shape.Left;
-                            float top = shape.Top;
-
                             if (!markersInfo.ContainsKey(pair.Key))
                             {
                                 Range anchorRange = shape.Anchor;
@@ -147,7 +152,6 @@ namespace UtilityWordLib
                     }
                 }
 
-
                 doc.SaveAs2(outPath);
             }
             finally
@@ -155,8 +159,8 @@ namespace UtilityWordLib
                 doc?.Close(false);
                 app.Quit(false);
             }
-
         }
+
 
         public static void ConvertToPdf(string wordPath, string pdfPath)
         {
