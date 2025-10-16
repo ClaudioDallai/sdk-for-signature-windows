@@ -1,7 +1,9 @@
-﻿using Microsoft.Office.Interop;
+﻿using Microsoft.Office.Core;
+using Microsoft.Office.Interop;
 using Microsoft.Office.Interop.Word;
 using System;
 using System.Collections.Generic;
+using Shape = Microsoft.Office.Interop.Word.Shape;
 
 
 namespace UtilityWordLib
@@ -69,6 +71,7 @@ namespace UtilityWordLib
 
             var app = new Microsoft.Office.Interop.Word.Application();
             Document doc = null;
+
             try
             {
                 app.Visible = false;
@@ -76,31 +79,74 @@ namespace UtilityWordLib
 
                 foreach (var pair in replacements)
                 {
-                    foreach (Range rng in doc.StoryRanges)
+                    bool found = false;
+
+                    // First occurence to get position before it gets invalidated
+                    foreach (Range storyRange in doc.StoryRanges)
                     {
-                        Find find = rng.Find;
+                        Range searchRange = storyRange.Duplicate;
+                        Find find = searchRange.Find;
+
                         find.ClearFormatting();
                         find.Text = pair.Key;
-                        find.Replacement.ClearFormatting();
-                        find.Replacement.Text = pair.Value;
+                        find.Forward = true;
+                        find.Wrap = WdFindWrap.wdFindStop;
 
-                        if (find.Execute(Replace: WdReplace.wdReplaceAll))
+                        if (find.Execute())
                         {
-
-                            // Only new markers for the first time
                             if (!markersInfo.ContainsKey(pair.Key))
                             {
                                 markersInfo.Add(pair.Key, new MarkerFoundLocationinfo
                                 {
-                                    Left = (float)rng.Information[WdInformation.wdHorizontalPositionRelativeToPage],
-                                    Top = (float)rng.Information[WdInformation.wdVerticalPositionRelativeToPage],
-                                    Page = (int)rng.Information[WdInformation.wdActiveEndPageNumber]
+                                    Left = (float)searchRange.Information[WdInformation.wdHorizontalPositionRelativeToPage],
+                                    Top = (float)searchRange.Information[WdInformation.wdVerticalPositionRelativeToPage],
+                                    Page = (int)searchRange.Information[WdInformation.wdActiveEndPageNumber]
+                                });
+                                found = true;
+                                break;
+                            }
+                        }
+                    }
+
+                    if (found)
+                    {
+                        foreach (Range storyRange in doc.StoryRanges)
+                        {
+                            Find replaceFind = storyRange.Find;
+                            replaceFind.ClearFormatting();
+                            replaceFind.Text = pair.Key;
+                            replaceFind.Replacement.ClearFormatting();
+                            replaceFind.Replacement.Text = pair.Value;
+                            replaceFind.Forward = true;
+                            replaceFind.Wrap = WdFindWrap.wdFindContinue;
+
+                            replaceFind.Execute(Replace: WdReplace.wdReplaceAll);
+                        }
+                    }
+
+                    foreach (Shape shape in doc.Shapes)
+                    {
+                        if (shape.AlternativeText == pair.Key)
+                        {
+                            float left = shape.Left;
+                            float top = shape.Top;
+
+                            if (!markersInfo.ContainsKey(pair.Key))
+                            {
+                                Range anchorRange = shape.Anchor;
+                                markersInfo.Add(pair.Key, new MarkerFoundLocationinfo
+                                {
+                                    Left = shape.Left,
+                                    Top = shape.Top,
+                                    Page = anchorRange.get_Information(WdInformation.wdActiveEndPageNumber)
                                 });
                             }
 
+                            shape.Delete();
                         }
                     }
                 }
+
 
                 doc.SaveAs2(outPath);
             }
@@ -109,6 +155,7 @@ namespace UtilityWordLib
                 doc?.Close(false);
                 app.Quit(false);
             }
+
         }
 
         public static void ConvertToPdf(string wordPath, string pdfPath)

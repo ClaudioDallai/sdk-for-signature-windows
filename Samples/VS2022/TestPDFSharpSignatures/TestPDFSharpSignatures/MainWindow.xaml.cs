@@ -3,7 +3,7 @@
 //using Interop.FlSigCOM; DO NOT NEED THIS
 using FLSIGCTLLib;
 using Interop.FlSigCapt;
-
+using Org.BouncyCastle.Asn1.Pkcs;
 // PDF related
 using PdfSharp.Drawing;
 using PdfSharp.Drawing.Layout;
@@ -11,8 +11,6 @@ using PdfSharp.Pdf;
 using PdfSharp.Pdf.AcroForms;
 using PdfSharp.Pdf.Annotations;
 using PdfSharp.Pdf.IO;
-using UtilityWordLib;
-
 // Crypto and signing
 using PdfSharp.Pdf.Security;
 using PdfSharp.Pdf.Signatures;
@@ -20,7 +18,9 @@ using PdfSharp.Snippets.Pdf;
 // System
 using System.IO;
 using System.Security.Cryptography.X509Certificates;
+using System.Windows.Controls;
 using System.Windows.Media.Imaging;
+using UtilityWordLib;
 
 /*
  Libraries and technologies used:
@@ -46,6 +46,7 @@ namespace TestPDFSharpSignatures
         private readonly string _nameMarker = "{{{NOME_COGNOME}}}";
         private readonly string _placeMarker = "{{{LUOGO_DATA}}}";
         private readonly string _signMarker = "{{{FIRMA}}}";
+        private readonly string _consentMarker = "{{{CONSENSO}}}";
 
         // Certificate subject name
         private readonly string _subjectName = "FirmaDemo";
@@ -78,6 +79,7 @@ namespace TestPDFSharpSignatures
                 string location = "";
                 string signerName = "";
                 string signerSurname = "";
+                string consens = "";
 
                 if (args.Length <= 1)
                 {
@@ -85,6 +87,7 @@ namespace TestPDFSharpSignatures
                     location = "Italia, Firenze";
                     signerName = "Luca";
                     signerSurname = "Bianchi";
+                    consens = "acconsente";
                 }
                 else
                 {
@@ -93,6 +96,7 @@ namespace TestPDFSharpSignatures
                     location = args[2];
                     signerName = args[3];
                     signerSurname = args[4];
+                    consens = args[5];
                 }
                 string locationDate = location + " " + DateTime.Now.ToString("yyyyMMddHHmmss");
                 string signer = signerName + " " + signerSurname;
@@ -105,7 +109,7 @@ namespace TestPDFSharpSignatures
                 }
 
                 WordProcessor.FillTemplate(out Dictionary<string, MarkerFoundLocationinfo> signLocationInfos,
-                                           new Dictionary<string, string> { { _nameMarker, signer }, { _signMarker, "" }, {_placeMarker, locationDate } },
+                                           new Dictionary<string, string> { { _nameMarker, signer }, { _signMarker, _signMarker }, { _placeMarker, locationDate }, { _consentMarker, consens } },
                                            _inputTemplateWord,
                                            _inputFilledTemplateWord);
 
@@ -224,7 +228,7 @@ namespace TestPDFSharpSignatures
             System.Windows.Application.Current.Shutdown();
         }
 
-        public void ActivateWacom(ref string signTargetPath, SigCtl sigCtl, string signer, string reason)
+        private void ActivateWacom(ref string signTargetPath, SigCtl sigCtl, string signer, string reason)
         {
             DynamicCapture dc = new Interop.FlSigCapt.DynamicCapture();
             try
@@ -276,24 +280,28 @@ namespace TestPDFSharpSignatures
 
         }
 
-        void InsertSignatureWordMarker(out DigitalSignatureOptions? options, ref string signTargetPath, MarkerFoundLocationinfo signInfo, SigCtl sigCtl, PdfDocument pdfDoc, string signer, string location, string reason)
+        private void InsertSignatureWordMarker(out DigitalSignatureOptions? options, ref string signTargetPath, MarkerFoundLocationinfo signInfo, SigCtl sigCtl, PdfDocument pdfDoc, string signer, string location, string reason)
         {
             options = null;
 
             try
             {
+                // Microsoft.Interop.Office.Word has different approach of coordinates compared to PDFSharp
+
+                // PDFSharp counts pages from 0, Office.Word from 1
                 if (signInfo.Page <= 0 || pdfDoc == null) return;
 
                 PdfPage pdfPage = pdfDoc.Pages[signInfo.Page - 1];
 
                 double pageHeight = pdfPage.Height.Point;
+
                 double pdfX = signInfo.Left;
                 double pdfY = pageHeight - signInfo.Top;
 
-                double width = 150;
-                double height = 100;
+                double rectangleWidth = 150;
+                double rectangleHeight = 100;
 
-                XRect signatureRect = new XRect(pdfX, pdfY - height, width, height);
+                XRect signatureRect = new XRect(pdfX, pdfY - rectangleHeight, rectangleWidth, rectangleHeight);
 
                 ActivateWacom(ref signTargetPath, sigCtl, signer, reason);
 
