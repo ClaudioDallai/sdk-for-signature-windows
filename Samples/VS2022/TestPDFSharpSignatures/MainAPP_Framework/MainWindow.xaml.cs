@@ -32,10 +32,10 @@ namespace MainAPP_Framework
 
             string[] args = new string[]
             {
-                "Sign Reason Placeholder external",
-                "Italia, Roma",
-                "Mario",
-                "Rossi"
+                "Sign Reason Crazy Placeholder",
+                "Italia, Napoli",
+                "Tommasino",
+                "Verdi"
             };
 
             string arguments = string.Join(" ", args.Select(a => $"\"{a}\""));
