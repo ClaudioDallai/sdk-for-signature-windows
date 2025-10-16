@@ -34,7 +34,7 @@ namespace MainAPP_Framework
             {
                 "Sign Reason Placeholder",
                 "Italia, Napoli",
-                "Tommasino",
+                "Tommaso",
                 "Verdi",
                 "acconsente"
             };
