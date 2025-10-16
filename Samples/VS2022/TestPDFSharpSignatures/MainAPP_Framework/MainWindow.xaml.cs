@@ -51,7 +51,12 @@ namespace MainAPP_Framework
                 CreateNoWindow = true
             };
 
-            Process.Start(psi);
+            using (Process signIt = Process.Start(psi))
+            {
+                signIt.WaitForExit();
+            }
+
+            System.Windows.Application.Current.Shutdown();
         }
     }
 }
