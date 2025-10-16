@@ -94,7 +94,7 @@ namespace TestPDFSharpSignatures
                     signerName = args[3];
                     signerSurname = args[4];
                 }
-
+                string locationDate = location + " " + DateTime.Now.ToString("yyyyMMddHHmmss");
                 string signer = signerName + " " + signerSurname;
 
 
@@ -105,7 +105,7 @@ namespace TestPDFSharpSignatures
                 }
 
                 WordProcessor.FillTemplate(out Dictionary<string, MarkerFoundLocationinfo> signLocationInfos,
-                                           new Dictionary<string, string> { { _nameMarker, signer }, { _signMarker, "" } },
+                                           new Dictionary<string, string> { { _nameMarker, signer }, { _signMarker, "" }, {_placeMarker, locationDate } },
                                            _inputTemplateWord,
                                            _inputFilledTemplateWord);
 
@@ -224,16 +224,14 @@ namespace TestPDFSharpSignatures
             System.Windows.Application.Current.Shutdown();
         }
 
-        public void ActivateWacom(SigCtl sigCtl, ref string signTargetPath, string signer, string reason)
+        public void ActivateWacom(ref string signTargetPath, SigCtl sigCtl, string signer, string reason)
         {
             DynamicCapture dc = new Interop.FlSigCapt.DynamicCapture();
             try
             {
-
                 DynamicCaptureResult res = dc.Capture(sigCtl, signer, reason, null, null);
                 if (res == DynamicCaptureResult.DynCaptOK)
                 {
-                    //print("signature captured successfully");
                     SigObj sigObj = (SigObj)sigCtl.Signature;
                     sigObj.set_ExtraData("AdditionalData", "C# test: Additional data");
 
@@ -242,35 +240,25 @@ namespace TestPDFSharpSignatures
                     String dateStr = DateTime.Now.ToString("hhmmss");
 
                     signTargetPath = @"C:\Users\visio\Desktop\PDF_ManipulationTests\Signs\" + dateStr + ".png";
-                    //print("Outputting to file " + signTargetPath);
                     try
                     {
-                        //print("Saving signature to file " + filename);
                         // Need to understand if DimensionX and DimensionY alter the image metadata. These values (200, 150) were already here in the example.
                         sigObj.RenderBitmap(signTargetPath, 200, 150, "image/png", 0.5f, 0xff0000, 0xffffff, 10.0f, 10.0f, RBFlags.RenderOutputFilename | RBFlags.RenderColor32BPP | RBFlags.RenderEncodeData);
 
-                        //print("Loading image from " + signTargetPath);
                         BitmapImage src = new BitmapImage();
                         src.BeginInit();
                         src.UriSource = new Uri(signTargetPath, UriKind.Absolute);
                         src.EndInit();
-
-                        //imgSig.Source = src;
                     }
                     catch (Exception ex)
                     {
                         // If Sign is too big like a painting (literally), an exception will be fired:
                         // $exceptio {"Too much data to encode in image"}	System.Runtime.InteropServices.COMException
-
-                        //System.Windows.Forms.MessageBox.Show(ex.Message);
                     }
-
                 }
                 else
                 {
-
                     // IF WACOM STU IS NOT ATTACHED: Returns message that license is invalid!
-                    //print("Signature capture error res=" + (int)res + "  ( " + res + " )");
                     switch (res)
                     {
                         case DynamicCaptureResult.DynCaptCancel: /*print("signature cancelled")*/; break;
@@ -284,7 +272,6 @@ namespace TestPDFSharpSignatures
             }
             catch
             {
-
             }
 
         }
@@ -308,7 +295,7 @@ namespace TestPDFSharpSignatures
 
                 XRect signatureRect = new XRect(pdfX, pdfY - height, width, height);
 
-                ActivateWacom(sigCtl, ref signTargetPath, signer, reason);
+                ActivateWacom(ref signTargetPath, sigCtl, signer, reason);
 
                 options = new DigitalSignatureOptions
                 {
