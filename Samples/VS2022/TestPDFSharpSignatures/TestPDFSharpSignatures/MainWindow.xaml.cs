@@ -3,22 +3,20 @@
 //using Interop.FlSigCOM; DO NOT NEED THIS
 using FLSIGCTLLib;
 using Interop.FlSigCapt;
-using Org.BouncyCastle.Asn1.Pkcs;
+
 // PDF related
 using PdfSharp.Drawing;
-using PdfSharp.Drawing.Layout;
 using PdfSharp.Pdf;
-using PdfSharp.Pdf.AcroForms;
-using PdfSharp.Pdf.Annotations;
 using PdfSharp.Pdf.IO;
+
 // Crypto and signing
 using PdfSharp.Pdf.Security;
 using PdfSharp.Pdf.Signatures;
 using PdfSharp.Snippets.Pdf;
+
 // System
 using System.IO;
 using System.Security.Cryptography.X509Certificates;
-using System.Windows.Controls;
 using System.Windows.Media.Imaging;
 using UtilityWordLib;
 
