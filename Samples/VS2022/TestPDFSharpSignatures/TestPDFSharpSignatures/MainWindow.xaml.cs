@@ -111,6 +111,7 @@ namespace TestPDFSharpSignatures
                                            new Dictionary<string, string> { { _nameMarker, signer }, { _signMarker, "" }, { _placeMarker, locationDate }, { _consentMarker, consens } },
                                            _inputTemplateWord,
                                            _inputFilledTemplateWord, 
+                                           false,
                                            true);
 
                 WordProcessor.ConvertToPdf(_inputFilledTemplateWord, _outputFilledTemplatePathNoSign);

@@ -66,12 +66,13 @@ namespace UtilityWordLib
         /// <param name="inPath"> Docx template to fill </param>
         /// <param name="checkShapesText"> If true iterate through all shapes to check AlternativeTexts and retreive all (of the ones matching text) positions </param>
         /// <param name="outPath"> Output docx </param>
-        public static void FillTemplate(out Dictionary<string, MarkerFoundLocationinfo> markersInfo, Dictionary<string, string> replacements, string inPath, string outPath, bool checkShapesText = false)
+        public static void FillTemplate(out Dictionary<string, MarkerFoundLocationinfo> markersInfo, Dictionary<string, string> replacements, string inPath, string outPath, bool getTextMarkerPositions = false, bool checkShapesText = false)
         {
             markersInfo = new Dictionary<string, MarkerFoundLocationinfo>();
 
             var app = new Microsoft.Office.Interop.Word.Application();
             Document doc = null;
+            bool foundTextOccurencePosition = false;
 
             try
             {
@@ -80,38 +81,39 @@ namespace UtilityWordLib
 
                 foreach (var pair in replacements)
                 {
-                    bool foundTextOccurence = false;
-
-                    // Searh for texts markers
-                    // First occurence to get position before it gets invalidated
-                    foreach (Range storyRange in doc.StoryRanges)
+                    if (getTextMarkerPositions)
                     {
-                        Range searchRange = storyRange.Duplicate;
-                        Find find = searchRange.Find;
-
-                        find.ClearFormatting();
-                        find.Text = pair.Key;
-                        find.Forward = true;
-                        find.Wrap = WdFindWrap.wdFindStop;
-
-                        if (find.Execute())
+                        // Searh for texts markers
+                        // First occurence to get position before it gets invalidated
+                        foreach (Range storyRange in doc.StoryRanges)
                         {
-                            if (!markersInfo.ContainsKey(pair.Key))
-                            {
-                                markersInfo.Add(pair.Key, new MarkerFoundLocationinfo
-                                {
-                                    Left = (float)searchRange.Information[WdInformation.wdHorizontalPositionRelativeToPage],
-                                    Top = (float)searchRange.Information[WdInformation.wdVerticalPositionRelativeToPage],
-                                    Page = (int)searchRange.Information[WdInformation.wdActiveEndPageNumber]
-                                });
+                            Range searchRange = storyRange.Duplicate;
+                            Find find = searchRange.Find;
 
-                                foundTextOccurence = true;
-                                break;
+                            find.ClearFormatting();
+                            find.Text = pair.Key;
+                            find.Forward = true;
+                            find.Wrap = WdFindWrap.wdFindStop;
+
+                            if (find.Execute())
+                            {
+                                if (!markersInfo.ContainsKey(pair.Key))
+                                {
+                                    markersInfo.Add(pair.Key, new MarkerFoundLocationinfo
+                                    {
+                                        Left = (float)searchRange.Information[WdInformation.wdHorizontalPositionRelativeToPage],
+                                        Top = (float)searchRange.Information[WdInformation.wdVerticalPositionRelativeToPage],
+                                        Page = (int)searchRange.Information[WdInformation.wdActiveEndPageNumber]
+                                    });
+
+                                    foundTextOccurencePosition = true;
+                                    break;
+                                }
                             }
                         }
                     }
 
-                    if (foundTextOccurence)
+                    if (foundTextOccurencePosition || !getTextMarkerPositions)
                     {
                         foreach (Range storyRange in doc.StoryRanges)
                         {
@@ -131,7 +133,7 @@ namespace UtilityWordLib
                     // While this is a different operation, and a standalone method could exists, this is an heavy operation, so we call it here if necessary
                     if (!checkShapesText) continue;
 
-                    // Searh for AlternativeTexts markers inside shapes
+                    // Search for AlternativeTexts markers inside shapes
                     foreach (Shape shape in doc.Shapes)
                     {
                         if (shape.AlternativeText == pair.Key)
